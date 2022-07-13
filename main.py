@@ -72,7 +72,7 @@ def train_generator(images, labels, aug=False):
         img = img[0].decode('utf-8')
         img = cv2.imread(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (N_RES, N_RES))
-        img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+        # img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
 
         yield (img, lbl)    
         
@@ -102,7 +102,7 @@ def test_generator(images, labels):
         
         img = cv2.imread(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (N_RES, N_RES))
-        img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+        # img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
 
         yield (img, lbl)    
             
