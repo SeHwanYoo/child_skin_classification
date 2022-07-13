@@ -19,12 +19,32 @@ import math
 import time
 import pandas as pd
 
+# from keras.utils.training_utils import multi_gpu_model
+
+import warnings 
+warnings.filterwarnings(action='ignore')
+
+from silence_tensorflow import silence_tensorflow
+silence_tensorflow()
+
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        # Memory growth must be set before GPUs have been initialized
+        print(e)
+
+
+
 # user defined libs
 # import models
 # import dataset_generator
 # from datasets import create_train_list
 N_RES = 256 
-N_BATCH = 16 
+N_BATCH = 128
 # PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
 PATH = '../../datasets/Child Skin Disease'
 dataset_path = os.path.join(PATH, 'Total_Dataset')
@@ -109,36 +129,50 @@ def create_dataset(images, labels, d_type='train', aug=False):
         
 def create_all_dict(dataset, min_num, max_num):
     all_dict = dict() 
-    
+    count_all_dict = dict() 
+
     for i in range(10):
-        files = os.listdir(os.path.join(dataset, f'H{i}'))
+        files = os.listdir(os.path.join(dataset_path, f'H{i}'))
         
         for f in files:
             # imgs = glob(os.path.join(dataset, f'H{i}', f) + '/*.jpg')
-            imgs = glob(f'{dataset}/H{i}/{f}/*.jpg')
+            imgs = glob(f'{dataset_path}/H{i}/{f}/*.jpg')
+            
+            # print(f)
 
             # class 통합 관련 내용 변경
             if f in name_dict: 
                 f = name_dict[f]
             
-            if f not in all_dict:
-                all_dict[f] = len(imgs) 
+            if f not in count_all_dict:
+                count_all_dict[f] = len(imgs) 
             else:
-                all_dict[f] += len(imgs)
+                count_all_dict[f] += len(imgs)
 
-    new_all_dict = all_dict.copy()
+    new_count_dict = count_all_dict.copy()
+
+    # print(new_count_dict)
+
     # 데이터 정제
-    for key, val in all_dict.items():
+    for key, val in count_all_dict.items():
         if val < min_num:
-            del new_all_dict[key]
+            del new_count_dict[key]
 
         if val > max_num:
-            new_all_dict[key] = max_num
-                
-    return new_all_dict
+            new_count_dict[key] = max_num
+            
+
+    idx_num = 0 
+    for idx, key in new_count_dict.items():
+        # print(idx)
+        all_dict[idx] = idx_num 
+        idx_num += 1 
+        
+        
+    return all_dict, new_count_dict
 
         
-def create_train_list(dataset, all_dict):
+def create_train_list(dataset, all_dict, count_all_dict):
     images = []
     for i in range(6):
 
@@ -165,7 +199,7 @@ def create_train_list(dataset, all_dict):
 
     # max 데이터 처리
     # count 를 돌면서 count
-    count_all_dict = all_dict.copy() 
+    # count_all_dict = all_dict.copy() 
 
     train_images = []
     for idx_imgs, val_imgs in enumerate(images):
@@ -175,9 +209,6 @@ def create_train_list(dataset, all_dict):
         if classes in name_dict:
             if count_all_dict[name_dict[classes]] > 0:
                 count_all_dict[name_dict[classes]] -= 1
-                # print(images[idx_imgs])
-                # replace_images = val_imgs.replace(classes, name_dict[classes])
-                # train_images.append(replace_images)
                 train_images.append(val_imgs)
 
             else:
@@ -217,11 +248,15 @@ def get_dropout(input_tensor, p=0.3, mc=False):
     else:
         return Dropout(p, name='top_dropout')(input_tensor, training=False)
 
+
 def run_expriment(model_name, train_dataset, val_dataset, kfold=0, res=256, classes=10, batch_size=32, mc=False, epochs=100): 
-    
+
+    # strategy = tf.distribute.MirroredStrategy()
+
+    # with strategy.scope():
+
     if model_name == 'efficient':
-        # base_model = keras.applications.EfficientNetB0(include_top=False, input_shape=(N_RES, N_RES, 3),  weights = 'imagenet')
-        base_model = keras.applications.EfficientNetB7(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
+        base_model = keras.applications.EfficientNetB4(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
         base_model.trainable = True
         
         inputs = keras.Input(shape=(res, res, 3))
@@ -244,91 +279,110 @@ def run_expriment(model_name, train_dataset, val_dataset, kfold=0, res=256, clas
         x = keras.layers.Dense(256, activation='relu')(x)
         x = keras.layers.Dense(classes, activation='softmax')(x)
         model = tf.keras.Model(inputs=inputs, outputs=x)
-        
 
-    sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'models/{model_name}_mc-{str(mc)}_bs-{batch_size}_{time.strftime("%Y%m%d-%H%M%S")}.h5'), 
-                                             monitor='val_accuracy', 
-                                             verbose=0, 
-                                             save_best_only=True,
-                                             save_weights_only=True, 
-                                             mode='max', 
-                                             save_freq='epoch'), 
-          tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
-                                           patience = 4, 
-                                           min_delta = 0.01)
-          ]
-
-    
-    LR = 0.0001
-    # steps_per_epoch = len(train_images) // batch_size
-    # lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(LR, steps_per_epoch*30, 0.1, True)
-    
-    # sgd = tf.keras.optimizers.SGD(0.01)
-    # moving_avg_sgd = tfa.optimizers.MovingAverage(sgd)
-    
-    
     model.compile(loss='sparse_categorical_crossentropy', 
-                #   optimizer = moving_avg_sgd, 
-                  optimizer = tf.keras.optimizers.Adam(LR), 
-                #   optimizer = tf.keras.optimizers.Adam(lr_schedule), 
-                  metrics=['accuracy'])
-    
-    hist = model.fit(train_dataset,
-                    validation_data=val_dataset,
-                    epochs=epochs,
-                    # class_weight=class_weights, 
-                    verbose=1,
-                    shuffle=True,
-                    callbacks=[sv])
-    
-    # histories.append(hist)
-    
-    return model, hist
+                optimizer = tf.keras.optimizers.Adam(0.001), 
+                metrics=['accuracy'])
+
+    return model 
+
+
+def create_model(model_name, res=256, trainable=False, classes=10, mc=False): 
+
+    # strategy = tf.distribute.MirroredStrategy()
+
+    # with strategy.scope():
+
+    if model_name == 'efficient':
+        base_model = keras.applications.EfficientNetB4(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
+        base_model.trainable = trainable
+        
+        inputs = keras.Input(shape=(res, res, 3))
+        x = base_model(inputs)
+        x = keras.layers.GlobalAveragePooling2D()(x) 
+        x = get_dropout(x, mc)
+        x = keras.layers.Dense(classes, activation='softmax')(x)
+        model = tf.keras.Model(inputs=inputs, outputs=x)
+        
+    # VGG16 
+    else:
+        base_model = keras.applications.VGG16(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
+        base_model.trainable = trainable
+        
+        inputs = keras.Input(shape=(res, res, 3))
+        x = base_model(inputs)
+        x = keras.layers.Flatten(name = "avg_pool")(x) 
+        x = keras.layers.Dense(512, activation='relu')(x)
+        x = get_dropout(x, mc)
+        x = keras.layers.Dense(256, activation='relu')(x)
+        x = keras.layers.Dense(classes, activation='softmax')(x)
+        model = tf.keras.Model(inputs=inputs, outputs=x)
+
+    model.compile(loss='sparse_categorical_crossentropy',
+    optimizer=tf.keras.optimizers.Adam(0.001),
+    metrics=['accuracy'])
+
+    return model 
 
 
 
 if __name__ == '__main__':
     
-    all_dict = create_all_dict(dataset_path, min_num, max_num)
+    all_dict, count_all_dict = create_all_dict(dataset_path, min_num, max_num)
     N_CLASSES = len(all_dict)
     # print(all_dict)
 
-    train_images, train_labels = create_train_list(dataset_path, all_dict)
+    train_images, train_labels = create_train_list(dataset_path, all_dict, count_all_dict)
     
     
     # print(f'train_images : {train_images}')
     # print(f'train_labels : {train_labels}')
 
-    kfold = 0 
     for skf_num in range(5, 11):
         skf = StratifiedKFold(n_splits=skf_num)
         
+        kfold = 0 
         for train_idx, valid_idx in skf.split(train_images, train_labels):
             
             # print(f'train_images : {train_images[train_idx]}')
             # print(f'train_labels : {train_labels[train_idx]}')
-            
-            train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=True) 
+            strategy = tf.distribute.MirroredStrategy()
+            # def create_model(model_name, res=256, trainable=False, classes=10, mc=False): 
+            with strategy.scope():
+                model = create_model('efficient', res=N_RES, classes=N_CLASSES, trainable=False, mc=False)
+
+
+            train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
             valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
         
-            train_dataset = train_dataset.batch(N_BATCH).shuffle(1000)
-            valid_dataset = valid_dataset.batch(N_BATCH).shuffle(1000)
-        
-            model, hist = run_expriment('efficient', train_dataset, valid_dataset, res=N_RES, classes=N_CLASSES, batch_size=N_BATCH, mc=False, epochs=100)
+            train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
+            valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
 
-            # evaluation
-            # PATH = '../../datasets/Child Skin Disease'
-            # model.save(f'/home/ubuntu/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{kfold}.h5')
+            sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'../../models/child_skin_classification/checkpoint_{model_name}_mc-{str(mc)}_bs-{batch_size}_{time.strftime("%Y%m%d-%H%M%S")}.h5'), 
+                                                monitor='val_accuracy', 
+                                                verbose=0, 
+                                                save_best_only=True,
+                                                save_weights_only=False, 
+                                                mode='max', 
+                                                save_freq='epoch'), 
+            tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
+                                            patience = 4, 
+                                            min_delta = 0.01)]
 
-            # # import pandas as pd
-            # hist_df = pd.DataFrame(hist.history)
-            # with open(f'/home/ubuntu/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{kfold}.csv', mode='w') as f:
-            #     hist_df.to_csv(f)
+            hist = model.fit(train_dataset,
+                    validation_data=valid_dataset,
+                    epochs=50,
+                    # class_weight=class_weights, 
+                    verbose=1,
+                    # shuffle=True,
+                    callbacks=[sv])
 
-            model.save(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{kfold}.h5')
+            model.save(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
 
             # import pandas as pd
             hist_df = pd.DataFrame(hist.history)
-            with open(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{kfold}.csv', mode='w') as f:
+            with open(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.csv', mode='w') as f:
                 hist_df.to_csv(f)
+
+            kfold += 1
 
