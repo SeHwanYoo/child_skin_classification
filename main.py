@@ -19,8 +19,6 @@ import math
 import time
 import pandas as pd
 
-# from keras.utils.training_utils import multi_gpu_model
-
 import warnings 
 warnings.filterwarnings(action='ignore')
 
@@ -38,11 +36,6 @@ if gpus:
         print(e)
 
 
-
-# user defined libs
-# import models
-# import dataset_generator
-# from datasets import create_train_list
 N_RES = 256 
 N_BATCH = 128
 # PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
@@ -330,24 +323,16 @@ if __name__ == '__main__':
     
     all_dict, count_all_dict = create_all_dict(dataset_path, min_num, max_num)
     N_CLASSES = len(all_dict)
-    # print(all_dict)
 
     train_images, train_labels = create_train_list(dataset_path, all_dict, count_all_dict)
-    
-    
-    # print(f'train_images : {train_images}')
-    # print(f'train_labels : {train_labels}')
 
-    for skf_num in range(5, 11):
+    for skf_num in range(3, 11):
         skf = StratifiedKFold(n_splits=skf_num)
         
         kfold = 0 
         for train_idx, valid_idx in skf.split(train_images, train_labels):
             
-            # print(f'train_images : {train_images[train_idx]}')
-            # print(f'train_labels : {train_labels[train_idx]}')
             strategy = tf.distribute.MirroredStrategy()
-            # def create_model(model_name, res=256, trainable=False, classes=10, mc=False): 
             with strategy.scope():
                 model = create_model('efficient', res=N_RES, classes=N_CLASSES, trainable=False, mc=False)
 
@@ -358,7 +343,7 @@ if __name__ == '__main__':
             train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
             valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
 
-            sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'../../models/child_skin_classification/checkpoint_{model_name}_mc-{str(mc)}_bs-{batch_size}_{time.strftime("%Y%m%d-%H%M%S")}.h5'), 
+            sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'../../models/child_skin_classification/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'), 
                                                 monitor='val_accuracy', 
                                                 verbose=0, 
                                                 save_best_only=True,
@@ -372,9 +357,7 @@ if __name__ == '__main__':
             hist = model.fit(train_dataset,
                     validation_data=valid_dataset,
                     epochs=50,
-                    # class_weight=class_weights, 
                     verbose=1,
-                    # shuffle=True,
                     callbacks=[sv])
 
             model.save(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
