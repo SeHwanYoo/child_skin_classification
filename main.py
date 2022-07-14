@@ -36,7 +36,8 @@ if gpus:
         print(e)
 
 
-N_RES = 256 
+# N_RES = 256 
+N_RES = 456
 N_BATCH = 128
 # PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
 PATH = '../../datasets/Child Skin Disease'
@@ -321,7 +322,7 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         model = tf.keras.Model(inputs=inputs, outputs=x)
 
     model.compile(loss='sparse_categorical_crossentropy',
-    optimizer=tf.keras.optimizers.Adam(1e-2),
+    optimizer=tf.keras.optimizers.Adam(),
     metrics=['accuracy'])
 
     return model 
@@ -332,6 +333,8 @@ if __name__ == '__main__':
     
     all_dict, count_all_dict = create_all_dict(dataset_path, min_num, max_num)
     num_classes = len(all_dict)
+    
+    print(f'number of classes : {num_classes}')
 
     train_images, train_labels = create_train_list(dataset_path, all_dict, count_all_dict)
 
@@ -344,7 +347,7 @@ if __name__ == '__main__':
             
             strategy = tf.distribute.MirroredStrategy()
             with strategy.scope():
-                model = create_model('efficient', res=N_RES, num_classes=num_classes, trainable=True, num_trainable=100, mc=False)
+                model = create_model('efficient', res=N_RES, num_classes=num_classes, trainable=True, num_trainable=-2, mc=False)
 
 
             train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
