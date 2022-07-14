@@ -343,7 +343,7 @@ if __name__ == '__main__':
     # N_CLASSES = len(all_dict)
     (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
     
-    train_images = train_images / 255.
+    # train_images = train_images / 255.
     
     # print(train_images.shape)
     # print(train_labels[0])
