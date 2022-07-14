@@ -45,7 +45,7 @@ dataset_path = os.path.join(PATH, 'Total_Dataset')
 
 # Train & test set
 min_num = 100
-max_num = 300 
+max_num = 3000 
 base_num = 1000 
 
 name_dict = {
