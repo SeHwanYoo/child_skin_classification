@@ -331,7 +331,7 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
 if __name__ == '__main__':
     
     all_dict, count_all_dict = create_all_dict(dataset_path, min_num, max_num)
-    N_CLASSES = len(all_dict)
+    num_classes = len(all_dict)
 
     train_images, train_labels = create_train_list(dataset_path, all_dict, count_all_dict)
 
@@ -344,7 +344,7 @@ if __name__ == '__main__':
             
             strategy = tf.distribute.MirroredStrategy()
             with strategy.scope():
-                model = create_model('efficient', res=N_RES, classes=N_CLASSES, trainable=True, num_trainable=100, mc=False)
+                model = create_model('efficient', res=N_RES, num_classes=num_classes, trainable=True, num_trainable=100, mc=False)
 
 
             train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
