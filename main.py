@@ -156,9 +156,9 @@ def create_all_dict(dataset, min_num, max_num):
             
 
     idx_num = 0 
-    for idx, key in new_count_dict.items():
+    for key, val in new_count_dict.items():
         # print(idx)
-        all_dict[idx] = idx_num 
+        all_dict[key] = idx_num 
         idx_num += 1 
         
         
@@ -242,42 +242,42 @@ def get_dropout(input_tensor, p=0.3, mc=False):
         return Dropout(p, name='top_dropout')(input_tensor, training=False)
 
 
-def run_expriment(model_name, train_dataset, val_dataset, kfold=0, res=256, classes=10, batch_size=32, mc=False, epochs=100): 
+# def run_expriment(model_name, train_dataset, val_dataset, kfold=0, res=256, classes=10, batch_size=32, mc=False, epochs=100): 
 
-    # strategy = tf.distribute.MirroredStrategy()
+#     # strategy = tf.distribute.MirroredStrategy()
 
-    # with strategy.scope():
+#     # with strategy.scope():
 
-    if model_name == 'efficient':
-        base_model = keras.applications.EfficientNetB4(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
-        base_model.trainable = True
+#     if model_name == 'efficient':
+#         base_model = keras.applications.EfficientNetB4(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
+#         base_model.trainable = True
         
-        inputs = keras.Input(shape=(res, res, 3))
-        x = base_model(inputs)
-        x = keras.layers.GlobalAveragePooling2D()(x) 
-        x = get_dropout(x, mc)
-        x = keras.layers.Dense(classes, activation='softmax')(x)
-        model = tf.keras.Model(inputs=inputs, outputs=x)
+#         inputs = keras.Input(shape=(res, res, 3))
+#         x = base_model(inputs)
+#         x = keras.layers.GlobalAveragePooling2D()(x) 
+#         x = get_dropout(x, mc)
+#         x = keras.layers.Dense(classes, activation='softmax')(x)
+#         model = tf.keras.Model(inputs=inputs, outputs=x)
         
-    # VGG16 
-    else:
-        base_model = keras.applications.VGG16(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
-        base_model.trainable = True
+#     # VGG16 
+#     else:
+#         base_model = keras.applications.VGG16(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
+#         base_model.trainable = True
         
-        inputs = keras.Input(shape=(res, res, 3))
-        x = base_model(inputs)
-        x = keras.layers.Flatten(name = "avg_pool")(x) 
-        x = keras.layers.Dense(512, activation='relu')(x)
-        x = get_dropout(x, mc)
-        x = keras.layers.Dense(256, activation='relu')(x)
-        x = keras.layers.Dense(classes, activation='softmax')(x)
-        model = tf.keras.Model(inputs=inputs, outputs=x)
+#         inputs = keras.Input(shape=(res, res, 3))
+#         x = base_model(inputs)
+#         x = keras.layers.Flatten(name = "avg_pool")(x) 
+#         x = keras.layers.Dense(512, activation='relu')(x)
+#         x = get_dropout(x, mc)
+#         x = keras.layers.Dense(256, activation='relu')(x)
+#         x = keras.layers.Dense(classes, activation='softmax')(x)
+#         model = tf.keras.Model(inputs=inputs, outputs=x)
 
-    model.compile(loss='sparse_categorical_crossentropy', 
-                optimizer = tf.keras.optimizers.Adam(0.001), 
-                metrics=['accuracy'])
+#     model.compile(loss='sparse_categorical_crossentropy', 
+#                 optimizer = tf.keras.optimizers.Adam(0.001), 
+#                 metrics=['accuracy'])
 
-    return model 
+#     return model 
 
 
 def create_model(model_name, res=256, trainable=False, classes=10, mc=False): 
@@ -293,7 +293,16 @@ def create_model(model_name, res=256, trainable=False, classes=10, mc=False):
         inputs = keras.Input(shape=(res, res, 3))
         x = base_model(inputs)
         x = keras.layers.GlobalAveragePooling2D()(x) 
+        
+        # add 20220714
+        x = keras.layers.BatchNormalization()(x)
+        
         x = get_dropout(x, mc)
+        
+        # add 20220714
+        x = keras.layers.Dense(512, activation='relu')(x)
+        x = keras.layers.Dense(256, activation='relu')(x)
+        
         x = keras.layers.Dense(classes, activation='softmax')(x)
         model = tf.keras.Model(inputs=inputs, outputs=x)
         
@@ -312,7 +321,7 @@ def create_model(model_name, res=256, trainable=False, classes=10, mc=False):
         model = tf.keras.Model(inputs=inputs, outputs=x)
 
     model.compile(loss='sparse_categorical_crossentropy',
-    optimizer=tf.keras.optimizers.Adam(0.001),
+    optimizer=tf.keras.optimizers.Adam(1e-2),
     metrics=['accuracy'])
 
     return model 
@@ -326,7 +335,8 @@ if __name__ == '__main__':
 
     train_images, train_labels = create_train_list(dataset_path, all_dict, count_all_dict)
 
-    for skf_num in range(3, 11):
+    # for skf_num in range(3, 11):
+    for skf_num in [5, 10]:
         skf = StratifiedKFold(n_splits=skf_num)
         
         kfold = 0 
