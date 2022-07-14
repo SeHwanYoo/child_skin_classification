@@ -44,7 +44,7 @@ dataset_path = os.path.join(PATH, 'Total_Dataset')
 
 # Train & test set
 min_num = 100
-max_num = 3000 
+max_num = 300 
 base_num = 1000 
 
 name_dict = {
@@ -280,15 +280,15 @@ def get_dropout(input_tensor, p=0.3, mc=False):
 #     return model 
 
 
-def create_model(model_name, res=256, trainable=False, classes=10, mc=False): 
-
-    # strategy = tf.distribute.MirroredStrategy()
-
-    # with strategy.scope():
+def create_model(model_name, res=256, trainable=False, num_trainable=100, num_classes=10, mc=False): 
 
     if model_name == 'efficient':
         base_model = keras.applications.EfficientNetB4(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
         base_model.trainable = trainable
+        
+        if trainable:
+            for layer in base_model.layers[:num_trainable]:
+                layer.trainable = False
         
         inputs = keras.Input(shape=(res, res, 3))
         x = base_model(inputs)
@@ -300,10 +300,10 @@ def create_model(model_name, res=256, trainable=False, classes=10, mc=False):
         x = get_dropout(x, mc)
         
         # add 20220714
-        x = keras.layers.Dense(512, activation='relu')(x)
-        x = keras.layers.Dense(256, activation='relu')(x)
+        # x = keras.layers.Dense(512, activation='relu')(x)
+        # x = keras.layers.Dense(256, activation='relu')(x)
         
-        x = keras.layers.Dense(classes, activation='softmax')(x)
+        x = keras.layers.Dense(num_classes, activation='softmax')(x)
         model = tf.keras.Model(inputs=inputs, outputs=x)
         
     # VGG16 
@@ -317,7 +317,7 @@ def create_model(model_name, res=256, trainable=False, classes=10, mc=False):
         x = keras.layers.Dense(512, activation='relu')(x)
         x = get_dropout(x, mc)
         x = keras.layers.Dense(256, activation='relu')(x)
-        x = keras.layers.Dense(classes, activation='softmax')(x)
+        x = keras.layers.Dense(num_classes, activation='softmax')(x)
         model = tf.keras.Model(inputs=inputs, outputs=x)
 
     model.compile(loss='sparse_categorical_crossentropy',
@@ -344,7 +344,7 @@ if __name__ == '__main__':
             
             strategy = tf.distribute.MirroredStrategy()
             with strategy.scope():
-                model = create_model('efficient', res=N_RES, classes=N_CLASSES, trainable=False, mc=False)
+                model = create_model('efficient', res=N_RES, classes=N_CLASSES, trainable=True, num_trainable=100, mc=False)
 
 
             train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
