@@ -284,7 +284,7 @@ def get_dropout(input_tensor, p=0.3, mc=False):
 def create_model(model_name, res=256, trainable=False, num_trainable=100, num_classes=10, mc=False): 
 
     if model_name == 'efficient':
-        base_model = keras.applications.EfficientNetB4(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
+        base_model = keras.applications.EfficientNetB3(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
         base_model.trainable = trainable
         
         if trainable:
@@ -322,7 +322,8 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         model = tf.keras.Model(inputs=inputs, outputs=x)
 
     model.compile(loss='sparse_categorical_crossentropy',
-    optimizer=tf.keras.optimizers.Adam(),
+    # optimizer=tf.keras.optimizers.Adam(),
+    optimizer=tfa.optimizers.LazyAdam(0.001),
     metrics=['accuracy'])
 
     return model 
@@ -369,8 +370,9 @@ if __name__ == '__main__':
 
             hist = model.fit(train_dataset,
                     validation_data=valid_dataset,
-                    epochs=50,
+                    epochs=30,
                     verbose=1,
+                    shuffle=True, 
                     callbacks=[sv])
 
             model.save(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')

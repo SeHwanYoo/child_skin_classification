@@ -3,6 +3,8 @@ from tensorflow import keras
 from tensorflow.keras import layers 
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Conv2D, Activation, MaxPooling2D, Dropout, Flatten
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
 
 import tensorflow_addons as tfa
 import cv2
@@ -18,6 +20,9 @@ import random
 import math
 import time
 import pandas as pd
+
+from imblearn.over_sampling import RandomOverSampler
+from imblearn.tensorflow import balanced_batch_generator
 
 import warnings 
 warnings.filterwarnings(action='ignore')
@@ -36,15 +41,15 @@ if gpus:
         print(e)
 
 
-N_RES = 256 
-N_BATCH = 128
+N_RES = 300 
+N_BATCH = 64
 PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
 # PATH = '../../datasets/Child Skin Disease'
 dataset_path = os.path.join(PATH, 'Total_Dataset')
 
 # Train & test set
 min_num = 100
-max_num = 300 
+max_num = 3000 
 base_num = 1000 
 
 name_dict = {
@@ -198,6 +203,7 @@ def create_train_list(dataset, all_dict, count_all_dict):
     for idx_imgs, val_imgs in enumerate(images):
 
         # class 통합 관련 내용 변경
+        # print(val_imgs)
         classes = val_imgs.split('/')[-1].split('\\')[0]
         # classes = val_imgs.split('/')[-2]
         
@@ -220,6 +226,7 @@ def create_train_list(dataset, all_dict, count_all_dict):
 
     train_labels = [] 
     for img in train_images:
+
         lbl = img.split('/')[-1].split('\\')[0]
         # lbl = img.split('/')[-2]
 
@@ -334,7 +341,8 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
 
     model.compile(loss='sparse_categorical_crossentropy',
     # optimizer=tf.keras.optimizers.Adam(1e-2),
-    optimizer='RMSprop', 
+    # optimizer='RMSprop', 
+    optimizer=tfa.optimizers.LazyAdam(0.001),
     metrics=['accuracy'])
 
     return model 
@@ -349,39 +357,55 @@ if __name__ == '__main__':
     train_images, train_labels = create_train_list(dataset_path, all_dict, count_all_dict)
 
     # for skf_num in range(3, 11):
-    for skf_num in [5, 10]:
-        skf = StratifiedKFold(n_splits=skf_num)
+    # for skf_num in [5, 10]:
+    #     skf = StratifiedKFold(n_splits=skf_num)
+    datagen = ImageDataGenerator(rotation_range=10,brightness_range=[0.2,1.0])
+
         
-        kfold = 0 
-        for train_idx, valid_idx in skf.split(train_images, train_labels):
+    #     kfold = 0 
+    #     for train_idx, valid_idx in skf.split(train_images, train_labels):
             
-            strategy = tf.distribute.MirroredStrategy()
-            with strategy.scope():
-                model = create_model('efficient', res=N_RES, num_classes=N_CLASSES, trainable=True, num_trainable=100, mc=False)
+            # strategy = tf.distribute.MirroredStrategy()
+            # with strategy.scope():
+    model = create_model('efficient', res=N_RES, num_classes=N_CLASSES, trainable=True, num_trainable=-2, mc=False)
+            
+            # datagen = BalancedDataGenerator() 
+            
+    train_ds = BalancedDataGenerator(datagen, train_images, train_labels, batch_size=N_BATCH)
+    
+    print(train_ds) 
 
 
-            train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
-            valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
+            # train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
+            # valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
+            
+            # balanced_gen = BalancedDataGenerator(X_train, y_train, datagen, batch_size=64)
+# balanced_gen_val = BalancedDataGenerator(X_val, y_val, datagen, batch_size=64)
+# steps_per_epoch = balanced_gen.steps_per_epoch
+            
+            # train_dataset, steps_per_epoch = train_dataset.map(test_map) 
+            # self.gen, self.steps_per_epoch = balanced_batch_generator(x.reshape(x.shape[0], -1), y, sampler=RandomOverSampler(), batch_size=self.batch_size, keep_sparse=True)
+
         
-            train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
-            valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
+            # train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
+            # valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
 
-            sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'../../models/child_skin_classification/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'), 
-                                                monitor='val_accuracy', 
-                                                verbose=0, 
-                                                save_best_only=True,
-                                                save_weights_only=False, 
-                                                mode='max', 
-                                                save_freq='epoch'), 
-            tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
-                                            patience = 4, 
-                                            min_delta = 0.01)]
+            # sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'../../models/child_skin_classification/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'), 
+            #                                     monitor='val_accuracy', 
+            #                                     verbose=0, 
+            #                                     save_best_only=True,
+            #                                     save_weights_only=False, 
+            #                                     mode='max', 
+            #                                     save_freq='epoch'), 
+            # tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
+            #                                 patience = 4, 
+            #                                 min_delta = 0.01)]
 
             # hist = model.fit(train_dataset,
             #         validation_data=valid_dataset,
             #         epochs=50,
-            #         verbose=1,
-            #         callbacks=[sv])
+            #         shuffle=True, 
+            #         verbose=1)
 
             # model.save(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
 
