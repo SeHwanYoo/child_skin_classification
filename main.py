@@ -38,7 +38,7 @@ if gpus:
 
 N_RES = 256 
 # N_RES = 300
-N_BATCH = 128 
+N_BATCH = 64
 # PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
 PATH = '../../datasets/Child Skin Disease'
 dataset_path = os.path.join(PATH, 'Total_Dataset')
@@ -358,8 +358,13 @@ if __name__ == '__main__':
         
             train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
             valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
+            
+            dir_name = os.path.join('../../models/child_skin_classification/', time.strftime("%Y%m%d"))
+            
+            if not os.path.exists(dir_name):
+                os.makedirs(dir_name)
 
-            sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'../../models/child_skin_classification/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'), 
+            sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'../../models/child_skin_classification/{dir_name}/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'), 
                                                 monitor='val_accuracy', 
                                                 verbose=0, 
                                                 save_best_only=True,
@@ -377,10 +382,7 @@ if __name__ == '__main__':
                     shuffle=True, 
                     callbacks=[sv])
             
-            dir_name = time.strftime("%Y%m%d")
             
-            if not os.path.exists(dir_name):
-                os.makedirs(dir_name)
 
             model.save(f'../../models/child_skin_classification/{dir_name}/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
 
