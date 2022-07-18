@@ -42,7 +42,7 @@ if gpus:
         print(e)
 
 
-N_RES = 300 
+N_RES = 256 
 N_BATCH = 32
 # PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
 PATH = '../../datasets/Child Skin Disease'
@@ -50,7 +50,7 @@ dataset_path = os.path.join(PATH, 'Total_Dataset')
 
 # Train & test set
 min_num = 100
-max_num = 3000 
+max_num = 200 
 base_num = 1000 
 
 name_dict = {
