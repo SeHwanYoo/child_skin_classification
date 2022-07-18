@@ -44,8 +44,8 @@ if gpus:
 
 N_RES = 300 
 N_BATCH = 32
-PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
-# PATH = '../../datasets/Child Skin Disease'
+# PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
+PATH = '../../datasets/Child Skin Disease'
 dataset_path = os.path.join(PATH, 'Total_Dataset')
 
 # Train & test set
@@ -205,8 +205,8 @@ def create_train_list(dataset, all_dict, count_all_dict):
 
         # class 통합 관련 내용 변경
         # print(val_imgs)
-        classes = val_imgs.split('/')[-1].split('\\')[0]
-        # classes = val_imgs.split('/')[-2]
+        # classes = val_imgs.split('/')[-1].split('\\')[0]
+        classes = val_imgs.split('/')[-2]
         
         
         if classes in name_dict:
@@ -228,8 +228,8 @@ def create_train_list(dataset, all_dict, count_all_dict):
     train_labels = [] 
     for img in train_images:
 
-        lbl = img.split('/')[-1].split('\\')[0]
-        # lbl = img.split('/')[-2]
+        # lbl = img.split('/')[-1].split('\\')[0]
+        lbl = img.split('/')[-2]
 
         # 변경/통합 버전으로 label 처리
         if lbl in name_dict:
