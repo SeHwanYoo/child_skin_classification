@@ -36,9 +36,9 @@ if gpus:
         print(e)
 
 
-# N_RES = 256 
-N_RES = 300
-N_BATCH = 64
+N_RES = 256 
+# N_RES = 300
+N_BATCH = 128 
 # PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
 PATH = '../../datasets/Child Skin Disease'
 dataset_path = os.path.join(PATH, 'Total_Dataset')
