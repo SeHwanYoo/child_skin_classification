@@ -423,13 +423,7 @@ if __name__ == '__main__':
             
             strategy = tf.distribute.MirroredStrategy()
             with strategy.scope():
-                model = create_model('small', res=N_RES, num_classes=N_CLASSES, trainable=True, num_trainable=-2, mc=False)
-            
-            # datagen = BalancedDataGenerator() 
-            
-    # train_ds = BalancedDataGenerator(datagen, train_images, train_labels, batch_size=N_BATCH)
-    
-    # print(train_ds) 
+                model = create_model('efficient', res=N_RES, num_classes=N_CLASSES, trainable=True, num_trainable=-2, mc=False)
 
 
             train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
@@ -443,8 +437,8 @@ if __name__ == '__main__':
             # self.gen, self.steps_per_epoch = balanced_batch_generator(x.reshape(x.shape[0], -1), y, sampler=RandomOverSampler(), batch_size=self.batch_size, keep_sparse=True)
 
         
-            train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
-            valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
+            train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).prefetch(AUTOTUNE)
+            valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).prefetch(AUTOTUNE)
 
             # sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'../../models/child_skin_classification/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'), 
             #                                     monitor='val_accuracy', 
