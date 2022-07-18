@@ -44,8 +44,8 @@ if gpus:
 
 N_RES = 300 
 N_BATCH = 32
-# PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
-PATH = '../../datasets/Child Skin Disease'
+PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
+# PATH = '../../datasets/Child Skin Disease'
 dataset_path = os.path.join(PATH, 'Total_Dataset')
 
 # Train & test set
@@ -77,6 +77,7 @@ def train_generator(images, labels, aug=False):
     
         img = img[0].decode('utf-8')
         img = cv2.imread(img, cv2.COLOR_BGR2RGB)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (N_RES, N_RES))
         img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
 
@@ -107,6 +108,7 @@ def test_generator(images, labels):
         img = img[0].decode('utf-8')
         
         img = cv2.imread(img, cv2.COLOR_BGR2RGB)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (N_RES, N_RES))
         img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
 
@@ -205,8 +207,8 @@ def create_train_list(dataset, all_dict, count_all_dict):
 
         # class 통합 관련 내용 변경
         # print(val_imgs)
-        # classes = val_imgs.split('/')[-1].split('\\')[0]
-        classes = val_imgs.split('/')[-2]
+        classes = val_imgs.split('/')[-1].split('\\')[0]
+        # classes = val_imgs.split('/')[-2]
         
         
         if classes in name_dict:
@@ -228,8 +230,8 @@ def create_train_list(dataset, all_dict, count_all_dict):
     train_labels = [] 
     for img in train_images:
 
-        # lbl = img.split('/')[-1].split('\\')[0]
-        lbl = img.split('/')[-2]
+        lbl = img.split('/')[-1].split('\\')[0]
+        # lbl = img.split('/')[-2]
 
         # 변경/통합 버전으로 label 처리
         if lbl in name_dict:
@@ -390,11 +392,14 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         x = keras.layers.Activation('softmax')(x) 
 
         model = keras.Model(inputs=inputs, outputs=x)
+        
+    # if op
 
     model.compile(loss='sparse_categorical_crossentropy',
     # optimizer=tf.keras.optimizers.Adam(1e-2),
     # optimizer='RMSprop', 
-    optimizer=tfa.optimizers.LazyAdam(0.001),
+    # optimizer=tfa.optimizers.LazyAdam(0.001),
+    optimizer=tf.keras.optimizers.SGD(1e-2),
     metrics=['accuracy'])
 
     return model 

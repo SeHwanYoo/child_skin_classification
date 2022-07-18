@@ -72,6 +72,7 @@ def train_generator(images, labels, aug=False):
     
         img = img[0].decode('utf-8')
         img = cv2.imread(img, cv2.COLOR_BGR2RGB)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (N_RES, N_RES))
         # img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
 
@@ -102,6 +103,7 @@ def test_generator(images, labels):
         img = img[0].decode('utf-8')
         
         img = cv2.imread(img, cv2.COLOR_BGR2RGB)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (N_RES, N_RES))
         # img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
 
@@ -374,12 +376,17 @@ if __name__ == '__main__':
                     verbose=1,
                     shuffle=True, 
                     callbacks=[sv])
+            
+            dir_name = time.strftime("%Y%m%d")
+            
+            if not os.path.exists(dir_name):
+                os.makedirs(dir_name)
 
-            model.save(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
+            model.save(f'../../models/child_skin_classification/{dir_name}/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
 
             # import pandas as pd
             hist_df = pd.DataFrame(hist.history)
-            with open(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.csv', mode='w') as f:
+            with open(f'../../models/child_skin_classification/{dir_name}/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.csv', mode='w') as f:
                 hist_df.to_csv(f)
 
             kfold += 1
