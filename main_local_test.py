@@ -1,3 +1,4 @@
+from grpc import xds_server_credentials
 import tensorflow as tf 
 from tensorflow import keras 
 from tensorflow.keras import layers 
@@ -77,7 +78,7 @@ def train_generator(images, labels, aug=False):
         img = img[0].decode('utf-8')
         img = cv2.imread(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (N_RES, N_RES))
-        # img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+        img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
 
         yield (img, lbl)    
         
@@ -107,7 +108,7 @@ def test_generator(images, labels):
         
         img = cv2.imread(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (N_RES, N_RES))
-        # img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
+        img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
 
         yield (img, lbl)    
             
@@ -351,7 +352,7 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         model = tf.keras.Model(inputs=inputs, outputs=x)        
         
     # VGG16 
-    else:
+    elif model_name == 'vgg':
         base_model = keras.applications.VGG16(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
         base_model.trainable = trainable
         
@@ -363,6 +364,32 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         x = keras.layers.Dense(256, activation='relu')(x)
         x = keras.layers.Dense(num_classes, activation='softmax')(x)
         model = tf.keras.Model(inputs=inputs, outputs=x)
+        
+    else:
+        inputs = Input((N_RES, N_RES, 3))
+
+        x = keras.layers.Conv2D(32, (3, 3), padding='same')(inputs) 
+        x = keras.layers.Activation('relu')(x)
+        x = keras.layers.Conv2D(32, (3, 3), padding='same')(inputs) 
+        x = keras.layers.Activation('relu')(x)
+        x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x) 
+        x = keras.layers.Dropout(0.25)(x)
+
+        x = keras.layers.Conv2D(128, (3, 3), padding='same')(x) 
+        x = keras.layers.Activation('relu')(x)
+        x = keras.layers.Conv2D(128, (3, 3), padding='same')(x) 
+        x = keras.layers.Activation('relu')(x)
+        x = keras.layers.MaxPooling2D(pool_size=(2, 2))(x) 
+        x = keras.layers.Dropout(0.25)(x)
+
+        x = keras.layers.Flatten()(x) 
+        x = keras.layers.Dense(512)(x) 
+        x = keras.layers.Activation('relu')(x) 
+        x = keras.layers.Dropout(0.25)(x)
+        x = keras.layers.Dense(10)(x) 
+        x = keras.layers.Activation('softmax')(x) 
+
+        model = keras.Model(inputs=inputs, outputs=x)
 
     model.compile(loss='sparse_categorical_crossentropy',
     # optimizer=tf.keras.optimizers.Adam(1e-2),
@@ -391,7 +418,7 @@ if __name__ == '__main__':
             
             # strategy = tf.distribute.MirroredStrategy()
             # with strategy.scope():
-            model = create_model('resnet', res=N_RES, num_classes=N_CLASSES, trainable=True, num_trainable=-2, mc=False)
+            model = create_model('small', res=N_RES, num_classes=N_CLASSES, trainable=True, num_trainable=-2, mc=False)
             
             # datagen = BalancedDataGenerator() 
             
