@@ -324,8 +324,8 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         model = tf.keras.Model(inputs=inputs, outputs=x)
 
     model.compile(loss='sparse_categorical_crossentropy',
-    # optimizer=tf.keras.optimizers.Adam(),
-    optimizer=tfa.optimizers.LazyAdam(0.001),
+    optimizer=tf.keras.optimizers.Adam(),
+    # optimizer=tfa.optimizers.LazyAdam(0.001),
     metrics=['accuracy'])
 
     return model 
