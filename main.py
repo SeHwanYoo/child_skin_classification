@@ -3,6 +3,7 @@ from tensorflow import keras
 from tensorflow.keras import layers 
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Conv2D, Activation, MaxPooling2D, Dropout, Flatten
+from tensorflow.python.keras.callbacks import TensorBoard
 
 import tensorflow_addons as tfa
 import cv2
@@ -374,12 +375,15 @@ if __name__ == '__main__':
             # tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
             #                                 patience = 4, 
             #                                 min_delta = 0.01)]
+            
+            tensorboard = TensorBoard(log_dir=f'../../logs/child_skin_classification/{time.strftime("%Y%m%d")}_{kfold}')
 
             hist = model.fit(train_dataset,
                     validation_data=valid_dataset,
                     epochs=150,
                     verbose=2,
-                    shuffle=True)
+                    shuffle=True,
+                    callbacks=[tensorboard])
             
 
             model.save(f'../../models/child_skin_classification/{dir_name}/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
