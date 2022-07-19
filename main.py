@@ -71,7 +71,7 @@ def train_generator(images, labels, aug=False):
     for img, lbl in zip(images, labels):
     
         img = img[0].decode('utf-8')
-        img = cv2.imread(img, cv2.COLOR_BGR2RGB)
+        img = cv2.imread(img)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (N_RES, N_RES))
         # img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
@@ -102,7 +102,7 @@ def test_generator(images, labels):
         
         img = img[0].decode('utf-8')
         
-        img = cv2.imread(img, cv2.COLOR_BGR2RGB)
+        img = cv2.imread(img)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (N_RES, N_RES))
         # img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
@@ -337,7 +337,7 @@ if __name__ == '__main__':
     all_dict, count_all_dict = create_all_dict(dataset_path, min_num, max_num)
     num_classes = len(all_dict)
     
-    print(f'number of classes : {num_classes}')
+    # print(f'number of classes : {num_classes}')
 
     train_images, train_labels = create_train_list(dataset_path, all_dict, count_all_dict)
 
@@ -364,24 +364,22 @@ if __name__ == '__main__':
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
 
-            sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'../../models/child_skin_classification/{dir_name}/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'), 
-                                                monitor='val_accuracy', 
-                                                verbose=0, 
-                                                save_best_only=True,
-                                                save_weights_only=False, 
-                                                mode='max', 
-                                                save_freq='epoch'), 
-            tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
-                                            patience = 4, 
-                                            min_delta = 0.01)]
+            # sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'../../models/child_skin_classification/{dir_name}/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'), 
+            #                                     monitor='val_accuracy', 
+            #                                     verbose=0, 
+            #                                     save_best_only=True,
+            #                                     save_weights_only=False, 
+            #                                     mode='max', 
+            #                                     save_freq='epoch'), 
+            # tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
+            #                                 patience = 4, 
+            #                                 min_delta = 0.01)]
 
             hist = model.fit(train_dataset,
                     validation_data=valid_dataset,
-                    epochs=30,
-                    verbose=1,
-                    shuffle=True, 
-                    callbacks=[sv])
-            
+                    epochs=150,
+                    verbose=2,
+                    shuffle=True)
             
 
             model.save(f'../../models/child_skin_classification/{dir_name}/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
