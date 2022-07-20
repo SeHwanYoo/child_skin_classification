@@ -376,14 +376,13 @@ if __name__ == '__main__':
             #                                 patience = 4, 
             #                                 min_delta = 0.01)]
             
-            tensorboard = TensorBoard(log_dir=f'../../logs/child_skin_classification/{time.strftime("%Y%m%d")}_{kfold}')
+            # tensorboard = TensorBoard(log_dir=f'../../logs/child_skin_classification/{time.strftime("%Y%m%d")}_{kfold}')
 
             hist = model.fit(train_dataset,
                     validation_data=valid_dataset,
-                    epochs=150,
-                    verbose=2,
-                    shuffle=True,
-                    callbacks=[tensorboard])
+                    epochs=100,
+                    # verbose=2,
+                    shuffle=True)
             
 
             model.save(f'../../models/child_skin_classification/{dir_name}/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
