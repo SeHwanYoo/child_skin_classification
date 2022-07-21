@@ -258,7 +258,8 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         
         inputs = keras.Input(shape=(res, res, 3))
         x = base_model(inputs)
-        x = keras.layers.GlobalAveragePooling2D()(x) 
+        x = keras.layers.Flatten(name = "avg_pool")(x) 
+        # x = keras.layers.GlobalAveragePooling2D()(x) 
         
         # add 20220714
         x = keras.layers.BatchNormalization()(x)
