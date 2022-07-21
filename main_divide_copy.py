@@ -338,6 +338,8 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
             if num_trainable != 0:
                 for layer in base_model.layers[:num_trainable]:
                     layer.trainable = False
+                    
+        base_model = base_model.layers[-1].output                    
         
         inputs = keras.Input(shape=(res, res, 3))
         x = preprocess_input(inputs)
@@ -411,7 +413,7 @@ if __name__ == '__main__':
                 model = create_model('efficient', 
                                         res=N_RES, 
                                         # num_classes=num_classes, 
-                                        trainable=True, 
+                                        trainable=False, 
                                         num_trainable=-2, 
                                         mc=False)
     
