@@ -269,6 +269,19 @@ def create_class_weight(all_dict, count_all_dict):
 
     return class_weight
 
+def get_bottleneck_feature(model_name, input_imgs):
+    
+    if model_name == 'efficient':
+        base_model = keras.applications.EfficientNetB5(include_top=False, input_shape=(256, 256, 3),  weights = 'imagenet')
+        
+    elif model_name == 'mobilenet':
+        base_model = keras.applications.MobileNetV2(include_top=False, input_shape=(256, 256, 3),  weights = 'imagenet')
+        
+    else:
+        base_model = keras.applications.VGG16(include_top=False, input_shape=(256, 256, 3),  weights = 'imagenet')
+    
+    return base_model.predict(input_imgs, verbose=0)
+
 
 def create_model(model_name, res=256, trainable=False, num_trainable=100, num_classes=10, mc=False): 
     
@@ -417,8 +430,10 @@ if __name__ == '__main__':
                                         num_trainable=-2, 
                                         mc=False)
     
-                train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
-                valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
+                train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False).map(lambda x, y : (get_bottleneck_feature('efficientnet', x), y))
+                valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]).map(lambda x, y : (get_bottleneck_feature('efficientnet', x), y))
+                
+                print('111111111111111')
         
         
         # split_len = int(len(train_images) * 0.3)
@@ -435,13 +450,13 @@ if __name__ == '__main__':
                 # if not os.path.exists(dir_name):
                 #     os.makedirs(dir_name)
 
-                hist = model.fit(train_dataset,
-                        validation_data=valid_dataset,
-                        # class_weight=class_weights, 
-                        # validation_split=0.3, 
-                        epochs=50,
-                        verbose=1,
-                        shuffle=True)
+                # hist = model.fit(train_dataset,
+                #         validation_data=valid_dataset,
+                #         # class_weight=class_weights, 
+                #         # validation_split=0.3, 
+                #         epochs=50,
+                #         verbose=1,
+                #         shuffle=True)
     
 
     # model.save(f'C:/Users/user/Desktop/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_100_and)500_kfold_{skf_num}_{kfold}.h5')
