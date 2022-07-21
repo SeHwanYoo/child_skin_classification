@@ -5,7 +5,6 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Conv2D, Activation, MaxPooling2D, Dropout, Flatten
 from tensorflow.python.keras.callbacks import TensorBoard
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
-from tensorflow.keras.applications.EfficientNetB5 import center_
 
 import tensorflow_addons as tfa
 import cv2
