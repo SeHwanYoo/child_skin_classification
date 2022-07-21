@@ -289,6 +289,9 @@ def get_bottleneck_model(model_name):
     return model
     
 def get_bottleneck_feature(model, input_imgs):
+    
+    print(f'type : {type(input_imgs)}, {input_imgs}')
+    
     return model.predict(input_imgs, verbose=0)
 
 
