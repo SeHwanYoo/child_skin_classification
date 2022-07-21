@@ -40,8 +40,8 @@ if gpus:
 N_RES = 256 
 # N_RES = 300
 N_BATCH = 16
-PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
-# PATH = '../../datasets/Child Skin Disease'
+# PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
+PATH = '../../datasets/Child Skin Disease'
 dataset_path = os.path.join(PATH, 'Total_Dataset')
 
 # Train & test set
@@ -152,8 +152,10 @@ def create_all_dict(dataset, min_num, max_num):
     # 데이터 정제
     for key, val in count_all_dict.items():
         # if val > min_num:
-        if (val >= 100) and (val <= 500):
-            del new_count_all_dict[key]
+        # if (val >= 100) and (val <= 500):
+        #     del new_count_all_dict[key]
+        # count_all_dict
+        new_count_all_dict[key] = int(val * 0.3)
             
     all_dict = dict() 
     idx_num = 0 
@@ -199,8 +201,8 @@ def create_train_list(dataset, all_dict, count_all_dict):
     for idx_imgs, val_imgs in enumerate(images):
 
         # class 통합 관련 내용 변경
-        # classes = val_imgs.split('/')[-2]
-        classes = val_imgs.split('/')[-1].split('\\')[0]
+        classes = val_imgs.split('/')[-2]
+        # classes = val_imgs.split('/')[-1].split('\\')[0]
         
         if classes in name_dict:
             classes = name_dict[classes]
@@ -219,8 +221,8 @@ def create_train_list(dataset, all_dict, count_all_dict):
 
     train_labels = [] 
     for img in train_images:
-        lbl = img.split('/')[-1].split('\\')[0]
-        # lbl = img.split('/')[-2]
+        # lbl = img.split('/')[-1].split('\\')[0]
+        lbl = img.split('/')[-2]
 
         # 변경/통합 버전으로 label 처리
         if lbl in name_dict:
@@ -311,7 +313,8 @@ if __name__ == '__main__':
             
             # strategy = tf.distribute.MirroredStrategy()
             # with strategy.scope():
-            model = create_model('efficient', res=N_RES, num_classes=num_classes, trainable=True, num_trainable=-2, mc=False)
+            with tf.device('/gpu:0'):
+                model = create_model('efficient', res=N_RES, num_classes=num_classes, trainable=True, num_trainable=-2, mc=False)
             
             train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
             valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
