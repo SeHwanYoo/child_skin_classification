@@ -444,7 +444,7 @@ if __name__ == '__main__':
                 
                 bottleneck_model = get_bottleneck_model('efficient')
                 
-                train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False).map(lambda x, y : (bottleneck_model(bottleneck_model, x), y))
+                train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False)
                 valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]).map(lambda x, y : (bottleneck_model(bottleneck_model, x), y))
                 
                 print('111111111111111')
@@ -455,8 +455,8 @@ if __name__ == '__main__':
         # # valid_dataset = create_dataset(train_images, train_labels) 
         # train_dataset = train_dataset.skip(split_len)
 
-                train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).shuffle(30).prefetch(AUTOTUNE)
-                valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).shuffle(30).prefetch(AUTOTUNE)
+                train_dataset = train_dataset.batch(N_BATCH).map(lambda x, y : (bottleneck_model(bottleneck_model, x), y))
+                valid_dataset = valid_dataset.batch(N_BATCH).map(lambda x, y : (bottleneck_model(bottleneck_model, x), y))
         
             
                 # dir_name = os.path.join('C:/Users/user/Desktop/models/child_skin_classification/', time.strftime("%Y%m%d"))
