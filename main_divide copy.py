@@ -5,6 +5,7 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Conv2D, Activation, MaxPooling2D, Dropout, Flatten
 from tensorflow.python.keras.callbacks import TensorBoard
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+from tensorflow.keras.applications.EfficientNetB5 import center_
 
 import tensorflow_addons as tfa
 import cv2
@@ -40,7 +41,8 @@ silence_tensorflow()
 #         print(e)
 
 
-N_RES = 256 
+N_RES = 300 
+N_CROP_RES = 256
 # N_RES = 300
 N_BATCH = 8
 PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
@@ -270,6 +272,11 @@ def create_class_weight(all_dict, count_all_dict):
 
 
 def create_model(model_name, res=256, trainable=False, num_trainable=100, num_classes=10, mc=False): 
+    
+    data_augmentation = tf.keras.Sequential([
+        tf.keras.layers.experimental.preprocessing.RandomFlip('horizontal'),
+        tf.keras.layers.experimental.preprocessing.RandomRotation(0.2),
+    ])
 
     if model_name == 'efficient':
         base_model = keras.applications.EfficientNetB5(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
@@ -280,7 +287,9 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
                 layer.trainable = False
         
         inputs = keras.Input(shape=(res, res, 3))
-        x = base_model(inputs)
+        x = tf.image.crop_and_resize(inputs, crop_size=(N_CROP_RES, N_CROP_RES))
+        x = data_augmentation(x) 
+        x = base_model(x)
         
         # 1
         x = keras.layers.GlobalAveragePooling2D()(x) 
@@ -403,7 +412,7 @@ if __name__ == '__main__':
                              res=N_RES, 
                              num_classes=num_classes, 
                              trainable=True, 
-                             num_trainable=0, 
+                             num_trainable=-2, 
                              mc=False)
     
         # train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
