@@ -4,6 +4,7 @@ from tensorflow.keras import layers
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Conv2D, Activation, MaxPooling2D, Dropout, Flatten
 from tensorflow.python.keras.callbacks import TensorBoard
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 
 import tensorflow_addons as tfa
 import cv2
@@ -26,15 +27,17 @@ warnings.filterwarnings(action='ignore')
 from silence_tensorflow import silence_tensorflow
 silence_tensorflow()
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    try:
-        # Currently, memory growth needs to be the same across GPUs
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        # Memory growth must be set before GPUs have been initialized
-        print(e)
+# tf.debugging.set_log_device_placement(True)
+
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# if gpus:
+#     try:
+#         # Currently, memory growth needs to be the same across GPUs
+#         for gpu in gpus:
+#             tf.config.experimental.set_memory_growth(gpu, True)
+#     except RuntimeError as e:
+#         # Memory growth must be set before GPUs have been initialized
+#         print(e)
 
 
 N_RES = 256 
@@ -151,11 +154,15 @@ def create_all_dict(dataset, min_num, max_num):
 
     # 데이터 정제
     for key, val in count_all_dict.items():
-        # if val > min_num:
-        # if (val >= 100) and (val <= 500):
+        # new_count_all_dict[key] = int(val * 0.2)
+        
+        # if val < 100:
         #     del new_count_all_dict[key]
-        # count_all_dict
-        new_count_all_dict[key] = int(val * 0.3)
+        # else:
+        #     new_count_all_dict[key] = int(val * 0.2)
+        
+        if val > 100:
+            new_count_all_dict[key] = 100 
             
     all_dict = dict() 
     idx_num = 0 
@@ -245,19 +252,19 @@ def get_dropout(input_tensor, p=0.5, mc=False):
     else:
         return Dropout(p, name='top_dropout')(input_tensor, training=False)
     
+    
 def create_class_weight(all_dict, count_all_dict):
     
-    print(f'all_dict : {all_dict}')
-    print(f'count_all_dict : {count_all_dict}')
+    # print(f'all_dict : {all_dict}')
+    # print(f'count_all_dict : {count_all_dict}')
     
     total = np.sum(list(count_all_dict.values()))
     class_weight = dict()
-    # for idx, key in label_to_index.items():
-    #     class_weight[key] = train_dict[idx] / total
-    # class_weight[0] = train_dict[0] / total
-    # class_weight[1] = train_dict[1] / total
+    
+    # for key, val in count_all_dict.items():
+    #     class_weight[all_dict[key]] = val / total
     for key, val in count_all_dict.items():
-        class_weight[all_dict[key]] = val / total
+        class_weight[all_dict[key]] = total / (len(all_dict) * val)
 
     return class_weight
 
@@ -265,7 +272,7 @@ def create_class_weight(all_dict, count_all_dict):
 def create_model(model_name, res=256, trainable=False, num_trainable=100, num_classes=10, mc=False): 
 
     if model_name == 'efficient':
-        base_model = keras.applications.EfficientNetB3(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
+        base_model = keras.applications.EfficientNetB5(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
         base_model.trainable = trainable
         
         if trainable:
@@ -276,9 +283,9 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         x = base_model(inputs)
         
         # 1
-        # x = keras.layers.GlobalAveragePooling2D()(x) 
-        # x = keras.layers.BatchNormalization()(x)
-        # x = get_dropout(x, mc)
+        x = keras.layers.GlobalAveragePooling2D()(x) 
+        x = keras.layers.BatchNormalization()(x)
+        x = get_dropout(x, mc)
         
         # 2
         # x = keras.layers.Flatten(name = "avg_pool")(x) 
@@ -290,14 +297,59 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         # x = get_dropout(x, mc)
         
         # 4
-        x = keras.layers.Flatten(name = "avg_pool")(x) 
+        # x = keras.layers.Flatten(name = "avg_pool")(x) 
+        # x = keras.layers.BatchNormalization()(x)
+        # x = get_dropout(x, mc)
+        # x = keras.layers.Dense(256, activation='relu')(x)
+        
+        # x = keras.layers.GlobalAveragePooling2D()(x) 
+        # x = keras.layers.BatchNormalization()(x)
+        # x = get_dropout(x, mc)
+        
+        # x = keras.layers.GlobalMaxPooling2D()(x) 
+        # x = keras.layers.Flatten()(x) 
+        # x = keras.layers.Dense(256, activation='relu')(x)
+        
+        # x = keras.layers.GlobalAveragePooling2D()(x) 
+        # x = keras.layers.Dense(256, activation='sigmoid')(x)
+        # x = get_dropout(x, mc)
+        
+        
+        
+    elif model_name == 'mobilenet':
+        base_model = keras.applications.MobileNetV2(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
+        base_model.trainable = trainable
+        
+        if trainable:
+            if num_trainable != 0:
+                for layer in base_model.layers[:num_trainable]:
+                    layer.trainable = False
+        
+        inputs = keras.Input(shape=(res, res, 3))
+        x = preprocess_input(inputs)
+        x = base_model(inputs)
+        
+        # 1
+        # x = keras.layers.GlobalAveragePooling2D()(x) 
+        # x = keras.layers.BatchNormalization()(x)
+        # x = get_dropout(x, mc)
+        
+        # 2
+        # x = keras.layers.GlobalAveragePooling2D()(x) 
+        # x = keras.layers.Dense(1024, activation='relu')(x)
+        # x = keras.layers.Dense(1024, activation='relu')(x)
+        # x = keras.layers.Dense(512, activation='relu')(x)
+        
+        # 3 
+        # x = keras.layers.GlobalMaxPooling2D()(x) 
+        # x = keras.layers.Dense(1024, activation='relu')(x)
+        # x = keras.layers.Dense(1024, activation='relu')(x)
+        # x = keras.layers.Dense(512, activation='relu')(x)
+        
+        # 4 
+        x = keras.layers.GlobalMaxPooling2D()(x) 
         x = keras.layers.BatchNormalization()(x)
         x = get_dropout(x, mc)
-        x = keras.layers.Dense(256, activation='relu')(x)
-        
-        
-        x = keras.layers.Dense(num_classes, activation='softmax')(x)
-        model = tf.keras.Model(inputs=inputs, outputs=x)
         
     # VGG16 
     else:
@@ -310,8 +362,11 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         x = keras.layers.Dense(512, activation='relu')(x)
         x = get_dropout(x, mc)
         x = keras.layers.Dense(256, activation='relu')(x)
-        x = keras.layers.Dense(num_classes, activation='softmax')(x)
-        model = tf.keras.Model(inputs=inputs, outputs=x)
+        # x = keras.layers.Dense(num_classes, activation='softmax')(x)
+        # model = tf.keras.Model(inputs=inputs, outputs=x)
+        
+    x = keras.layers.Dense(num_classes, activation='softmax')(x)
+    model = tf.keras.Model(inputs=inputs, outputs=x)
 
     model.compile(loss='sparse_categorical_crossentropy',
     optimizer=tf.keras.optimizers.Adam(),
@@ -327,7 +382,7 @@ if __name__ == '__main__':
     all_dict, count_all_dict = create_all_dict(dataset_path, min_num, max_num)
     num_classes = len(all_dict)
     
-    print(f'number of classes : {num_classes}')
+    class_weights = create_class_weight(all_dict, count_all_dict)
 
     train_images, train_labels = create_train_list(dataset_path, all_dict, count_all_dict)
 
@@ -342,7 +397,14 @@ if __name__ == '__main__':
             # with strategy.scope():
     # with tf.device('/gpu:0'):
     with tf.device("/device:GPU:0"):
-        model = create_model('efficient', res=N_RES, num_classes=num_classes, trainable=True, num_trainable=-2, mc=False)
+    # strategy = tf.distribute.MirroredStrategy()
+    # with strategy.scope():
+        model = create_model('efficient', 
+                             res=N_RES, 
+                             num_classes=num_classes, 
+                             trainable=True, 
+                             num_trainable=0, 
+                             mc=False)
     
         # train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
         # valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
@@ -365,9 +427,10 @@ if __name__ == '__main__':
 
         hist = model.fit(train_dataset,
                 validation_data=valid_dataset,
+                # class_weight=class_weights, 
                 # validation_split=0.3, 
                 epochs=50,
-                # verbose=2,
+                verbose=1,
                 shuffle=True)
     
 

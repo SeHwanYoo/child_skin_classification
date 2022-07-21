@@ -115,26 +115,26 @@ def create_all_dict(dataset, min_num, max_num):
     return all_dict, new_count_dict
 
         
-def create_train_list(dataset, all_dict, count_all_dict):
+def create_train_list(all_dict, count_all_dict):
     images = []
     for i in range(6):
 
         for key, val in all_dict.items():
-            img = glob(dataset + f'/H{str(i)}/{key}/*.jpg')
+            img = glob(main.dataset_path + f'/H{str(i)}/{key}/*.jpg')
             images.extend(img)
 
         for key, val in main.name_dict.items():
-            img = glob(dataset + f'/H{str(i)}/{key}/*.jpg')
+            img = glob(main.dataset_path + f'/H{str(i)}/{key}/*.jpg')
             images.extend(img)
 
         
     # 전남대 추가
     for key, val in all_dict.items(): 
-        img = glob(dataset + '/H9/{key}/*.jpg')
+        img = glob(main.dataset_path + '/H9/{key}/*.jpg')
         images.extend(img) 
 
     for key, val in main.name_dict.items():
-        img = glob(dataset + f'/H9/{key}/*.jpg')
+        img = glob(main.dataset_path + f'/H9/{key}/*.jpg')
         images.extend(img)
 
     # 고른 데이터 분배를 위한 random shuffle

@@ -23,6 +23,8 @@ import pandas as pd
 import warnings 
 warnings.filterwarnings(action='ignore')
 
+tf.debugging.set_log_device_placement(True)
+
 from silence_tensorflow import silence_tensorflow
 silence_tensorflow()
 

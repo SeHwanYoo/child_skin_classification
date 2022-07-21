@@ -84,7 +84,12 @@ if __name__ == '__main__':
             
             strategy = tf.distribute.MirroredStrategy()
             with strategy.scope():
-                model = models.create_model('efficient', res=num_res, num_classes=num_classes, trainable=True, num_trainable=-2, mc=False)
+                model = models.create_model('efficient', 
+                                            res=num_res, 
+                                            num_classes=num_classes, 
+                                            trainable=True, 
+                                            num_trainable=-2, 
+                                            mc=False)
 
 
             train_dataset = models.create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
