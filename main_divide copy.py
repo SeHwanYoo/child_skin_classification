@@ -39,9 +39,9 @@ if gpus:
 
 N_RES = 256 
 # N_RES = 300
-N_BATCH = 16
-# PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
-PATH = '../../datasets/Child Skin Disease'
+N_BATCH = 8
+PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
+# PATH = '../../datasets/Child Skin Disease'
 dataset_path = os.path.join(PATH, 'Total_Dataset')
 
 # Train & test set
@@ -201,8 +201,8 @@ def create_train_list(dataset, all_dict, count_all_dict):
     for idx_imgs, val_imgs in enumerate(images):
 
         # class 통합 관련 내용 변경
-        classes = val_imgs.split('/')[-2]
-        # classes = val_imgs.split('/')[-1].split('\\')[0]
+        # classes = val_imgs.split('/')[-2]
+        classes = val_imgs.split('/')[-1].split('\\')[0]
         
         if classes in name_dict:
             classes = name_dict[classes]
@@ -221,8 +221,8 @@ def create_train_list(dataset, all_dict, count_all_dict):
 
     train_labels = [] 
     for img in train_images:
-        # lbl = img.split('/')[-1].split('\\')[0]
-        lbl = img.split('/')[-2]
+        lbl = img.split('/')[-1].split('\\')[0]
+        # lbl = img.split('/')[-2]
 
         # 변경/통합 버전으로 label 처리
         if lbl in name_dict:
@@ -247,12 +247,15 @@ def get_dropout(input_tensor, p=0.5, mc=False):
     
 def create_class_weight(all_dict, count_all_dict):
     
-    # print(f'all_dict : {all_dict}')
-    # print(f'count_all_dict : {count_all_dict}')
+    print(f'all_dict : {all_dict}')
+    print(f'count_all_dict : {count_all_dict}')
     
     total = np.sum(list(count_all_dict.values()))
     class_weight = dict()
-    
+    # for idx, key in label_to_index.items():
+    #     class_weight[key] = train_dict[idx] / total
+    # class_weight[0] = train_dict[0] / total
+    # class_weight[1] = train_dict[1] / total
     for key, val in count_all_dict.items():
         class_weight[all_dict[key]] = val / total
 
@@ -271,17 +274,27 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         
         inputs = keras.Input(shape=(res, res, 3))
         x = base_model(inputs)
-        x = keras.layers.Flatten(name = "avg_pool")(x) 
+        
+        # 1
         # x = keras.layers.GlobalAveragePooling2D()(x) 
+        # x = keras.layers.BatchNormalization()(x)
+        # x = get_dropout(x, mc)
         
-        # add 20220714
+        # 2
+        # x = keras.layers.Flatten(name = "avg_pool")(x) 
+        # x = keras.layers.BatchNormalization()(x)
+        # x = get_dropout(x, mc)
+        
+        # 3 
+        # x = keras.layers.Flatten(name = "avg_pool")(x) 
+        # x = get_dropout(x, mc)
+        
+        # 4
+        x = keras.layers.Flatten(name = "avg_pool")(x) 
         x = keras.layers.BatchNormalization()(x)
-        
         x = get_dropout(x, mc)
+        x = keras.layers.Dense(256, activation='relu')(x)
         
-        # add 20220714
-        # x = keras.layers.Dense(512, activation='relu')(x)
-        # x = keras.layers.Dense(256, activation='relu')(x)
         
         x = keras.layers.Dense(num_classes, activation='softmax')(x)
         model = tf.keras.Model(inputs=inputs, outputs=x)
@@ -314,50 +327,56 @@ if __name__ == '__main__':
     all_dict, count_all_dict = create_all_dict(dataset_path, min_num, max_num)
     num_classes = len(all_dict)
     
-    class_weights = create_class_weight(all_dict, count_all_dict)
-    
     print(f'number of classes : {num_classes}')
 
     train_images, train_labels = create_train_list(dataset_path, all_dict, count_all_dict)
 
     # for skf_num in range(3, 11):
-    for skf_num in [5, 10]:
-        skf = StratifiedKFold(n_splits=skf_num)
+    # for skf_num in [5, 10]:
+    #     skf = StratifiedKFold(n_splits=skf_num)
         
-        kfold = 0 
-        for train_idx, valid_idx in skf.split(train_images, train_labels):
+    #     kfold = 0 
+    #     for train_idx, valid_idx in skf.split(train_images, train_labels):
             
-            strategy = tf.distribute.MirroredStrategy()
-            with strategy.scope():
-            # with tf.device('/gpu:0'):
-            # with tf.device("/device:GPU:0"):
-                model = create_model('efficient', res=N_RES, num_classes=num_classes, trainable=True, num_trainable=-2, mc=False)
+            # strategy = tf.distribute.MirroredStrategy()
+            # with strategy.scope():
+    # with tf.device('/gpu:0'):
+    with tf.device("/device:GPU:0"):
+        model = create_model('efficient', res=N_RES, num_classes=num_classes, trainable=True, num_trainable=-2, mc=False)
+    
+        # train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
+        # valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
+        train_dataset = create_dataset(train_images, train_labels, aug=False) 
+        
+        
+        split_len = int(len(train_images) * 0.3)
+        valid_dataset = train_dataset.take(split_len)
+        # valid_dataset = create_dataset(train_images, train_labels) 
+        train_dataset = train_dataset.skip(split_len)
+
+        train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).shuffle(30).prefetch(AUTOTUNE)
+        valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).shuffle(30).prefetch(AUTOTUNE)
+        
             
-                train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
-                valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
-            
-                train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).shuffle(30).prefetch(AUTOTUNE)
-                valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).shuffle(30).prefetch(AUTOTUNE)
-                
                 # dir_name = os.path.join('C:/Users/user/Desktop/models/child_skin_classification/', time.strftime("%Y%m%d"))
                 
                 # if not os.path.exists(dir_name):
                 #     os.makedirs(dir_name)
 
-                hist = model.fit(train_dataset,
-                        validation_data=valid_dataset,
-                        epochs=50,
-                        class_weight=class_weights, 
-                        # verbose=2,
-                        shuffle=True)
-            
+        hist = model.fit(train_dataset,
+                validation_data=valid_dataset,
+                # validation_split=0.3, 
+                epochs=50,
+                # verbose=2,
+                shuffle=True)
+    
 
-            model.save(f'C:/Users/user/Desktop/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_100_and)500_kfold_{skf_num}_{kfold}.h5')
+    # model.save(f'C:/Users/user/Desktop/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_100_and)500_kfold_{skf_num}_{kfold}.h5')
 
-            # import pandas as pd
-            hist_df = pd.DataFrame(hist.history)
-            with open(f'C:/Users/user/Desktop/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_100_and)500_kfold_{skf_num}_{kfold}.csv', mode='w') as f:
-                hist_df.to_csv(f)
+    # # import pandas as pd
+    # hist_df = pd.DataFrame(hist.history)
+    # with open(f'C:/Users/user/Desktop/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_100_and)500_kfold_{skf_num}_{kfold}.csv', mode='w') as f:
+    #     hist_df.to_csv(f)
 
-            kfold += 1
+    # kfold += 1
 
