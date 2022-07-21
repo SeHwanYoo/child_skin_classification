@@ -273,8 +273,12 @@ def create_class_weight(all_dict, count_all_dict):
 def create_model(model_name, res=256, trainable=False, num_trainable=100, num_classes=10, mc=False): 
     
     data_augmentation = tf.keras.Sequential([
-        tf.keras.layers.experimental.preprocessing.RandomFlip('horizontal'),
-        tf.keras.layers.experimental.preprocessing.RandomRotation(0.2),
+        # tf.keras.layers.experimental.preprocessing.RandomFlip('horizontal'),
+        # tf.keras.layers.experimental.preprocessing.RandomRotation(0.2),
+        layers.RandomRotation(factor=0.15),
+        layers.RandomTranslation(height_factor=0.1, width_factor=0.1),
+        layers.RandomFlip(),
+        layers.RandomContrast(factor=0.1),
     ])
 
     if model_name == 'efficient':
@@ -286,8 +290,8 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
                 layer.trainable = False
         
         inputs = keras.Input(shape=(res, res, 3))
-        x = tf.image.crop_and_resize(inputs, crop_size=(N_CROP_RES, N_CROP_RES))
-        x = data_augmentation(x) 
+        # x = tf.image.crop_and_resize(inputs, crop_size=(N_CROP_RES, N_CROP_RES))
+        x = data_augmentation(inputs) 
         x = base_model(x)
         
         # 1
