@@ -269,8 +269,7 @@ def create_class_weight(all_dict, count_all_dict):
 
     return class_weight
 
-def get_bottleneck_feature(model_name, input_imgs):
-    
+def get_bottleneck_model(model_name):
     if model_name == 'efficient':
         base_model = keras.applications.EfficientNetB5(include_top=False, input_shape=(256, 256, 3),  weights = 'imagenet')
         
@@ -279,8 +278,18 @@ def get_bottleneck_feature(model_name, input_imgs):
         
     else:
         base_model = keras.applications.VGG16(include_top=False, input_shape=(256, 256, 3),  weights = 'imagenet')
+        
+    x = base_model.layers[-1].output
+    x = keras.layers.Flatten()(x)
+    model = keras.Model(base_model.input, x)
+    model.trainable = False
+    for layer in model.layers:
+        layer.trainable = False
+        
+    return model
     
-    return base_model.predict(input_imgs, verbose=0)
+def get_bottleneck_feature(model, input_imgs):
+    return model.predict(input_imgs, verbose=0)
 
 
 def create_model(model_name, res=256, trainable=False, num_trainable=100, num_classes=10, mc=False): 
@@ -429,9 +438,11 @@ if __name__ == '__main__':
                                         trainable=False, 
                                         num_trainable=-2, 
                                         mc=False)
-    
-                train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False).map(lambda x, y : (get_bottleneck_feature('efficientnet', x), y))
-                valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]).map(lambda x, y : (get_bottleneck_feature('efficientnet', x), y))
+                
+                bottleneck_model = get_bottleneck_model('efficient')
+                
+                train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False).map(lambda x, y : (bottleneck_model(bottleneck_model, x), y))
+                valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]).map(lambda x, y : (bottleneck_model(bottleneck_model, x), y))
                 
                 print('111111111111111')
         
