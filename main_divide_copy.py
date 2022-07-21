@@ -285,6 +285,8 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         base_model = keras.applications.EfficientNetB5(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
         base_model.trainable = trainable
         
+        # print(base_model)
+        
         if trainable:
             for layer in base_model.layers[:num_trainable]:
                 layer.trainable = False
@@ -399,37 +401,31 @@ if __name__ == '__main__':
     train_images, train_labels = create_train_list(dataset_path, all_dict, count_all_dict)
 
     # for skf_num in range(3, 11):
-    # for skf_num in [5, 10]:
-    #     skf = StratifiedKFold(n_splits=skf_num)
+    for skf_num in [5, 10]:
+        skf = StratifiedKFold(n_splits=skf_num)
         
     #     kfold = 0 
-    #     for train_idx, valid_idx in skf.split(train_images, train_labels):
+        for train_idx, valid_idx in skf.split(train_images, train_labels):
             
-            # strategy = tf.distribute.MirroredStrategy()
-            # with strategy.scope():
-    # with tf.device('/gpu:0'):
-    with tf.device("/device:GPU:0"):
-    # strategy = tf.distribute.MirroredStrategy()
-    # with strategy.scope():
-        model = create_model('efficient', 
-                             res=N_RES, 
-                             num_classes=num_classes, 
-                             trainable=True, 
-                             num_trainable=-2, 
-                             mc=False)
+            with tf.device("/device:GPU:0"):
+                model = create_model('efficient', 
+                                        res=N_RES, 
+                                        # num_classes=num_classes, 
+                                        trainable=True, 
+                                        num_trainable=-2, 
+                                        mc=False)
     
-        # train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
-        # valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
-        train_dataset = create_dataset(train_images, train_labels, aug=False) 
+                train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
+                valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
         
         
-        split_len = int(len(train_images) * 0.3)
-        valid_dataset = train_dataset.take(split_len)
-        # valid_dataset = create_dataset(train_images, train_labels) 
-        train_dataset = train_dataset.skip(split_len)
+        # split_len = int(len(train_images) * 0.3)
+        # valid_dataset = train_dataset.take(split_len)
+        # # valid_dataset = create_dataset(train_images, train_labels) 
+        # train_dataset = train_dataset.skip(split_len)
 
-        train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).shuffle(30).prefetch(AUTOTUNE)
-        valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).shuffle(30).prefetch(AUTOTUNE)
+                train_dataset = train_dataset.batch(N_BATCH, drop_remainder=True).shuffle(30).prefetch(AUTOTUNE)
+                valid_dataset = valid_dataset.batch(N_BATCH, drop_remainder=True).shuffle(30).prefetch(AUTOTUNE)
         
             
                 # dir_name = os.path.join('C:/Users/user/Desktop/models/child_skin_classification/', time.strftime("%Y%m%d"))
@@ -437,13 +433,13 @@ if __name__ == '__main__':
                 # if not os.path.exists(dir_name):
                 #     os.makedirs(dir_name)
 
-        hist = model.fit(train_dataset,
-                validation_data=valid_dataset,
-                # class_weight=class_weights, 
-                # validation_split=0.3, 
-                epochs=50,
-                verbose=1,
-                shuffle=True)
+                hist = model.fit(train_dataset,
+                        validation_data=valid_dataset,
+                        # class_weight=class_weights, 
+                        # validation_split=0.3, 
+                        epochs=50,
+                        verbose=1,
+                        shuffle=True)
     
 
     # model.save(f'C:/Users/user/Desktop/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_100_and)500_kfold_{skf_num}_{kfold}.h5')
