@@ -78,9 +78,9 @@ def create_all_dict(min_num, max_num):
         files = os.listdir(os.path.join(main.dataset_path, f'H{i}'))
         
         for f in files:
-            f = f.lower().replace(' ', '')
-            
             imgs = glob(f'{main.dataset_path}/H{i}/{f}/*.jpg')
+            
+            f = f.lower().replace(' ', '')
 
             # class 통합 관련 내용 변경
             if f in main.name_dict: 
@@ -119,14 +119,24 @@ def create_all_dict(min_num, max_num):
 def create_train_list(all_dict, count_all_dict):
     images = []
     for i in range(6):
+        
+        folders = os.listdir(os.path.join(main.dataset_path, f'H{i}'))
+        
+        for folder in folders:
+            folder = folder.lower().replace(' ', '')
+            
+            if folder in all_dict:
+                img = glob(main.dataset_path + f'/H{str(i)}/{folder}/*.jpg')
+                images.extend(img)
+                
 
-        for key, val in all_dict.items():
-            img = glob(main.dataset_path + f'/H{str(i)}/{key}/*.jpg')
-            images.extend(img)
+        # for key, val in all_dict.items():
+        #     img = glob(main.dataset_path + f'/H{str(i)}/{key}/*.jpg')
+        #     images.extend(img)
 
-        for key, val in main.name_dict.items():
-            img = glob(main.dataset_path + f'/H{str(i)}/{key}/*.jpg')
-            images.extend(img)
+        # for key, val in main.name_dict.items():
+        #     img = glob(main.dataset_path + f'/H{str(i)}/{key}/*.jpg')
+        #     images.extend(img)
 
         
     # 전남대 추가
@@ -154,22 +164,6 @@ def create_train_list(all_dict, count_all_dict):
             count_all_dict[classes] -= 1
             train_images.append(val_imgs)
         
-        # if classes in main.name_dict:    
-        #     if count_all_dict[main.name_dict[classes]] > 0:
-        #         count_all_dict[main.name_dict[classes]] -= 1
-        #         train_images.append(val_imgs)
-
-        #     else:
-        #         continue
-
-        # else:
-        #     if count_all_dict[classes] > 0:
-        #         count_all_dict[classes] -= 1
-        #         train_images.append(val_imgs)
-        #     else:
-        #         continue
-
-
     train_labels = [] 
     for img in train_images:
         # lbl = img.split('/')[-1].split('\\')[0]
