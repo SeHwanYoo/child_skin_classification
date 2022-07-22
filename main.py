@@ -280,12 +280,12 @@ AUTOTUNE = tf.data.AUTOTUNE
     
 if __name__ == '__main__':
     
-    all_dict, count_all_dict = dataset_generator.create_all_dict(dataset_path, min_num, max_num)
+    all_dict, count_all_dict = dataset_generator.create_all_dict(min_num, max_num)
     num_classes = len(all_dict)
     
-    # print(f'number of classes : {num_classes}')
+    print(f'number of classes : {num_classes}')
 
-    train_images, train_labels = dataset_generator.create_train_list(dataset_path, all_dict, count_all_dict)
+    train_images, train_labels = dataset_generator.create_train_list(all_dict, count_all_dict)
 
     # for skf_num in range(3, 11):
     for skf_num in [5, 10]:

@@ -70,7 +70,7 @@ def create_dataset(images, labels, d_type='train', aug=False):
                                               output_shapes=(tf.TensorShape([main.num_res, main.num_res, 3]), tf.TensorShape([1])),
                                               args=[images, labels, aug])
         
-def create_all_dict(dataset, min_num, max_num):
+def create_all_dict(min_num, max_num):
     all_dict = dict() 
     count_all_dict = dict() 
 
