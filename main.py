@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
             hist = model.fit(train_dataset,
                     validation_data=valid_dataset,
-                    epochs=100,
+                    epochs=10000,
                     # verbose=2,
                     shuffle=True)
             

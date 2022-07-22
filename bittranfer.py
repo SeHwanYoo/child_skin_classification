@@ -5,6 +5,8 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Conv2D, Activation, MaxPooling2D, Dropout, Flatten
 from tensorflow.python.keras.callbacks import TensorBoard
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+import tensorflow_hub as hub
+import tensorflow_datasets as tfds
 
 import tensorflow_addons as tfa
 import cv2
@@ -26,6 +28,8 @@ warnings.filterwarnings(action='ignore')
 
 from silence_tensorflow import silence_tensorflow
 silence_tensorflow()
+
+tf.random.set_seed(41)
 
 # tf.debugging.set_log_device_placement(True)
 
@@ -53,235 +57,13 @@ min_num = 100
 max_num = 3000 
 base_num = 1000 
 
-# name_dict = {
-#     'Depressed scar' : 'Acne scar', 
-#     'Acquired tufted hemangioma' : 'Acquired tufted angioma', 
-#     'Cyst' : 'Epidermal cyst', 
-#     'Infantile hemangioma' : 'Hemangioma',
-#     'ILVEN': 'Inflammatory linear verrucous epidermal nevus'
-# }
-
 name_dict = {
-    'acnescarintegrated' : 'acnescar', # add 
-    'depressedscar' : 'acnescar', 
-    'acquiredtuftedhemangioma' : 'acquiredtuftedangioma', 
-    'acquiredtuftedhamangioma' : 'acquiredtuftedangioma', # add a and e
-    'cyst' : 'epidermalcyst', 
-    'cystintegrated' : 'epidermalcyst', # add
-    'infantilehemangioma' : 'hemangioma',
-    'hemangiomaintegrated' : 'hemangioma',
-    'ilven': 'inflammatorylinearverrucousepidermalnevus'
+    'Depressed scar' : 'Acne scar', 
+    'Acquired tufted hemangioma' : 'Acquired tufted angioma', 
+    'Cyst' : 'Epidermal cyst', 
+    'Infantile hemangioma' : 'Hemangioma',
+    'ILVEN': 'Inflammatory linear verrucous epidermal nevus'
 }
-
-class_list = [
-"Abscess",
-"Acanthosis nigricans",
-"Acne",
-"Acne neonatorum",
-"Acne scar",
-"Acquired bilateral nevus of Ota-like macules",
-"Acquired tufted angioma",
-"Actinic cheilitis",
-"Actinic keratosis",
-"Alopecia areata",
-"Androgenetic alopecia",
-"Anetoderma",
-"Angioedema",
-"Angiofibroma",
-"Angiokeratoma",
-"Angular cheilitis",
-"Aplasia cutis, congenital",
-"Atopic dermatitis",
-"Basal Cell Carcinoma of skin",
-"Beau's lines",
-"Becker's nevus",
-"Blue nevus",
-"Bowen's disease",
-"Bullous disease",
-"Cafe-au-lait spot",
-"Cellulitis",
-"Cheilitis",
-"Chicken pox (varicella)",
-"Childhood granulomatous periorificial dermatitis",
-"Condyloma acuminata",
-"Confluent and reticulated papillomatosis",
-"Congenital Hemangioma",
-"Congenital melanocytic nevus",
-"Congenital smooth muscle hamartoma",
-"Contact dermatitis",
-"Corn, Callus",
-"Cutaneous larva migrans",
-"Cutaneous lupus erythematosus",
-"Cutis marmorata",
-"Cutis marmorata telangiectatica congenita (CMTC)",
-"Depressed scar",
-"Dermal Melanocytic Hamartoma",
-"Dermatofibroma",
-"Dermatofibrosarcoma protuberans",
-"Digital Mucous cyst",
-"Disseminated superficial actinic porokeratosis",
-"Drug eruption",
-"Dyshidrotic eczema",
-"Dysplastic nevus",
-"Eccrine poroma",
-"Eczema herpeticum",
-"Epidermal cyst",
-"Epidermal nevus",
-"Erythema ab igne",
-"Erythema annulare centrifugum",
-"Erythema dyschromicum perstans",
-"Erythema induratum",
-"Erythema multiforme",
-"Erythema nodosum",
-"Exfoliative dermatitis",
-"Extramammary Paget'S Disease",
-"Female type baldness",
-"Fixed drug eruption",
-"Folliculitis",
-"Fordyce's spot",
-"Freckle",
-"Furuncle",
-"Gianotti-Crosti syndrome",
-"Graft Versus Host Disease",
-"Granuloma annulare",
-"Green nail syndrome",
-"Guttate psoriasis",
-"Halo nevus",
-"Hand eczema",
-"Hand, foot and mouth disease",
-"Hemangioma",
-"Henoch-Schonlein purpura",
-"Herpes simplex infection",
-"Herpes zoster",
-"Hidradenitis suppurativa",
-"Ichthyosis",
-"Idiopathic guttate hypomelanosis",
-"Impetigo",
-"Incontinentia pigmenti",
-"Infantile hemangioma",
-"Infantile seborrheic dermatitis",
-"Inflammatory linear verrucous epidermal nevus",
-"Ingrowing nail",
-"Insect bites and stings",
-"Juvenile xanthogranuloma",
-"Kaposi's sarcoma",
-"Keloid scar",
-"Keratoacanthoma",
-"Keratosis pilaris",
-"Lentigo",
-"Lichen amyloidosis",
-"Lichen nitidus",
-"Lichen planus",
-"Lichen simplex chronicus",
-"Lichen striatus",
-"Linear scleroderma",
-"Lipoma",
-"Livedo reticularis",
-"Livedoid vasculitis",
-"Localized scleroderma",
-"Lymphangioma",
-"Mastocytoma",
-"Melanocytic nevus",
-"Melanoma",
-"Melanonychia",
-"Melasma",
-"Miliaria",
-"Milium",
-"Molluscum contagiosum",
-"Mongolian spot",
-"Mucosal melanocytic macule",
-"Mycosis fungoides",
-"Necrobiosis lipoidica",
-"Neurofibroma",
-"Neurofibromatosis",
-"Nevus anemicus",
-"Nevus comedonicus",
-"Nevus depigmentosus",
-"nevus lipomatous superficialis",
-"Nevus of Ota",
-"Nevus sebaceus",
-"Nevus spilus",
-"Nummular eczema",
-"Onychodystrophy",
-"Onychogryphosis",
-"Onycholysis",
-"Onychomycosis",
-"Oral mucocele",
-"Paget's disease of skin",
-"Palmoplantar keratoderma",
-"Panniculitis ",
-"Parapsoriasis",
-"Paronychia",
-"Partial unilateral lentiginosis",
-"Perioral dermatitis",
-"Pigmented purpuric dermatosis",
-"Pilomatricoma",
-"Pincer nail",
-"Pitted keratolysis",
-"Pityriasis alba",
-"Pityriasis amiantacea",
-"Pityriasis lichenoides",
-"Pityriasis rosea",
-"Pityriasis versicolor",
-"Poikiloderma of civatte",
-"Porokeratosis",
-"Port-Wine stain",
-"Postinflammatory hyperpigmentation",
-"Postinflammatory hypopigmentation",
-"Progressive macular hypomelanosis",
-"Prurigo",
-"Prurigo pigmentosa",
-"Pseudoxanthoma elasticum",
-"Psoriasis",
-"Purpura",
-"Pustular psoriasis",
-"Pustulosis palmaris et plantaris",
-"Pyoderma gangrenosum",
-"Pyogenic granuloma",
-"Riehl's melanosis",
-"Rosacea",
-"Sacrococcygeal dimple",
-"Salmon patch",
-"Scabies",
-"Scar",
-"Sebaceous hyperplasia",
-"Seborrheic dermatitis",
-"Seborrheic keratosis",
-"Senile gluteal dermatosis",
-"Senile purpura",
-"Skin tag",
-"Spider angioma",
-"Squamous cell carcinoma of skin",
-"Staphylococcal scalded skin syndrome",
-"Steatocystoma multiplex",
-"Striae distensae",
-"Subungual hemorrhage",
-"Syringoma",
-"Telangiectasia",
-"Tinea capitis",
-"Tinea corporis",
-"Tinea cruris",
-"Tinea faciale",
-"Tinea manus",
-"Tinea pedis",
-"Toxic epidermal necrolysis",
-"Trichotillomania",
-"Ulcer",
-"Urticaria",
-"Urticaria pigmentosa",
-"Vascular malformation",
-"Vasculitis",
-"Venous lake",
-"Verruca plana",
-"Viral exanthem",
-"Vitiligo",
-"Wart",
-"Xanthelasma",
-"Xerotic eczema",
-]
-
-
-class_list = list((map(lambda x : x.lower().replace(' ', ''), class_list)))
 
 
 AUTOTUNE = tf.data.AUTOTUNE
@@ -307,16 +89,16 @@ def train_generator(images, labels, aug=False):
         
         # if lower than base num, should apply data augmentation
         # if base_num <= int(train_dict[idx]):
-        # if aug:
-        #     # Btight 
-        #     random_bright_tensor = tf.image.random_brightness(img, max_delta=128)
-        #     random_bright_tensor = tf.clip_by_value(random_bright_tensor, 0, 255)
-        #     random_bright_image = tf.keras.preprocessing.image.array_to_img(random_bright_tensor)
-        #     yield (random_bright_tensor, lbl) 
+        if aug:
+            # Btight 
+            random_bright_tensor = tf.image.random_brightness(img, max_delta=128)
+            random_bright_tensor = tf.clip_by_value(random_bright_tensor, 0, 255)
+            random_bright_image = tf.keras.preprocessing.image.array_to_img(random_bright_tensor)
+            yield (random_bright_tensor, lbl) 
     
-        #     # rotation
-        #     rotated_img = tf.image.rot90(img)        
-        #     yield (rotated_img, lbl) 
+            # rotation
+            rotated_img = tf.image.rot90(img)        
+            yield (rotated_img, lbl) 
             
             # # curmix 
             # cutmixed_img, cutmixed_lbl = cutmix(img, lbl)
@@ -350,16 +132,13 @@ def create_dataset(images, labels, d_type='train', aug=False):
                                               output_shapes=(tf.TensorShape([N_RES, N_RES, 3]), tf.TensorShape([1])),
                                               args=[images, labels, aug])
         
-def create_all_dict(dataset):
+def create_all_dict(dataset, min_num, max_num):
     
     count_all_dict = dict() 
     for i in range(10):
         files = os.listdir(os.path.join(dataset_path, f'H{i}'))
         
         for f in files:
-            
-            f = f.lower().replace(' ', '')
-            
             # imgs = glob(os.path.join(dataset, f'H{i}', f) + '/*.jpg')
             imgs = glob(f'{dataset_path}/H{i}/{f}/*.jpg')
             
@@ -368,36 +147,27 @@ def create_all_dict(dataset):
             # class 통합 관련 내용 변경
             if f in name_dict: 
                 f = name_dict[f]
-                
-            if not f in class_list:
-                print(f'WARNING!! NOT FOUND LABEL : {f}')
             
             if f not in count_all_dict:
                 count_all_dict[f] = len(imgs) 
             else:
                 count_all_dict[f] += len(imgs)
-                
-    # key_dict = list(count_all_dict.keys())[num_dict]
 
     new_count_all_dict = count_all_dict.copy()
-    # new_count_all_dict = {
-    #     'normal' : count_all_dict['normal'], 
-        
-    # }
 
     # print(new_count_dict)
 
     # 데이터 정제
-    # for key, val in count_all_dict.items():
-    #     # new_count_all_dict[key] = int(val * 0.2)
+    for key, val in count_all_dict.items():
+        # new_count_all_dict[key] = int(val * 0.2)
         
-    #     # if val < 100:
-    #     #     del new_count_all_dict[key]
-    #     # else:
-    #     #     new_count_all_dict[key] = int(val * 0.2)
+        # if val < 100:
+        #     del new_count_all_dict[key]
+        # else:
+        #     new_count_all_dict[key] = int(val * 0.2)
         
-    #     if val > 1000:
-    #         new_count_all_dict[key] = 1000 
+        if val > 1000:
+            new_count_all_dict[key] = 100 
             
     all_dict = dict() 
     idx_num = 0 
@@ -444,7 +214,7 @@ def create_train_list(dataset, all_dict, count_all_dict):
 
         # class 통합 관련 내용 변경
         # classes = val_imgs.split('/')[-2]
-        classes = val_imgs.split('/')[-1].split('\\')[0].lower().replace(' ', '')
+        classes = val_imgs.split('/')[-1].split('\\')[0]
         
         if classes in name_dict:
             classes = name_dict[classes]
@@ -454,9 +224,16 @@ def create_train_list(dataset, all_dict, count_all_dict):
                 count_all_dict[classes] -= 1
                 train_images.append(val_imgs)
 
+        # else:
+        #     if classes in count_all_dict:
+        #         if count_all_dict[classes] > 0:
+        #             count_all_dict[classes] -= 1
+        #             train_images.append(val_imgs)
+
+
     train_labels = [] 
     for img in train_images:
-        lbl = img.split('/')[-1].split('\\')[0].lower().replace(' ', '')
+        lbl = img.split('/')[-1].split('\\')[0]
         # lbl = img.split('/')[-2]
 
         # 변경/통합 버전으로 label 처리
@@ -539,13 +316,11 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
 
     if model_name == 'efficient':
         base_model = keras.applications.EfficientNetB3(include_top=False, input_shape=(res, res, 3),  weights = 'imagenet')
-        base_model.trainable = trainable
+        # base_model.trainable = trainable
         
-        
-        if trainable:
-            if num_trainable != 0:
-                for layer in base_model.layers[:num_trainable]:
-                    layer.trainable = False
+        for layer in base_model.layers[-20:]:
+            if not isinstance(layer, layers.BatchNormalization):
+                layer.trainable = True
         
         
         inputs = keras.Input(shape=(res, res, 3))
@@ -588,11 +363,9 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         # x = keras.layers.Dense(num_classes, activation='softmax')(x)
         # model = tf.keras.Model(inputs=inputs, outputs=x)
         
-        # x = keras.layers.Dense(256, activation=None)(x)
-        # x = keras.layers.Lambda(lambda k: tf.math.l2_normalize(k, axis=1))(x)
+        x = keras.layers.Dense(256, activation=None)(x)
+        x = keras.layers.Lambda(lambda k: tf.math.l2_normalize(k, axis=1))(x)
         
-        
-        x = keras.layers.Dense(1, activation='sigmoid')(x)
         model = tf.keras.Model(inputs=inputs, outputs=x)
         
         
@@ -651,109 +424,151 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         x = keras.layers.Dense(num_classes, activation='softmax')(x)
         model = tf.keras.Model(inputs=inputs, outputs=x)
         
-    # model.compile(
-    # loss=tfa.losses.TripletSemiHardLoss(), 
-    # # loss='sparse_categorical_crossentropy',
-    # optimizer=tf.keras.optimizers.Adam(1e-4),
-    # # optimizer=tfa.optimizers.LazyAdam(0.001),
-    # metrics=['accuracy'])
-    
-    model.compile(loss='binary_crossentropy', 
-                optimizer = tf.keras.optimizers.SGD(0.001),
-                metrics=['accuracy'])
+    model.compile(
+    loss=tfa.losses.TripletSemiHardLoss(), 
+    # loss='sparse_categorical_crossentropy',
+    optimizer=tf.keras.optimizers.Adam(1e-4),
+    # optimizer=tfa.optimizers.LazyAdam(0.001),
+    metrics=['accuracy'])
 
     return model 
+
+class MyBiTModel(keras.Model):
+    def __init__(self, num_classes, module, **kwargs):
+        super().__init__(**kwargs)
+
+        self.num_classes = num_classes
+        self.head = keras.layers.Dense(num_classes, kernel_initializer="zeros")
+        self.bit_model = module
+
+    def call(self, images):
+        bit_embedding = self.bit_model(images)
+        return self.head(bit_embedding)
 
 
 
 if __name__ == '__main__':
     
-    all_dict, count_all_dict = create_all_dict(dataset_path)
-    # num_classes = len(all_dict)
+    all_dict, count_all_dict = create_all_dict(dataset_path, min_num, max_num)
+    num_classes = len(all_dict)
     
-    # print(f'Number of Classes : {num_classes}')
-    
-    # class_weights = create_class_weight(all_dict, count_all_dict)
-    
-    # all_dict
-    for ii in range(3):
-        
-        key_all_dict = list(all_dict.keys())[ii]
-        
-        new_all_dict = {
-            'normal' : 0, 
-            key_all_dict : 1 
-        }
-        
-        new_count_all_dict = {
-            'normal' : count_all_dict['normal'], 
-            key_all_dict : count_all_dict[key_all_dict]
-        }
-        
-        
-        print('-------------------------------------')
-        print(new_all_dict)
-        print(new_count_all_dict)
-        print('-------------------------------------')
+    class_weights = create_class_weight(all_dict, count_all_dict)
 
-        train_images, train_labels = create_train_list(dataset_path, new_all_dict, new_count_all_dict)
-        
-        
-        print('-------------------------------------')
-        print(train_images)
-        print(train_labels)
-        print('-------------------------------------')
-        
-        # bottleneck_model = get_bottleneck_model('efficient')
+    train_images, train_labels = create_train_list(dataset_path, all_dict, count_all_dict)
+    
+    bottleneck_model = get_bottleneck_model('efficient')
 
-        # # for skf_num in range(3, 11):
-        # for skf_num in [5, 10]:
-        #     skf = StratifiedKFold(n_splits=skf_num)
+    # for skf_num in range(3, 11):
+    for skf_num in [5, 10]:
+        skf = StratifiedKFold(n_splits=skf_num)
+        
+    #     kfold = 0 
+        for train_idx, valid_idx in skf.split(train_images, train_labels):
             
-        # #     kfold = 0 
-        #     for train_idx, valid_idx in skf.split(train_images, train_labels):
-                
-        #         with tf.device("/device:GPU:0"):
-        strategy = tf.distribute.MirroredStrategy()
-        with strategy.scope():
-            model = create_model('efficient', 
-                                    res=N_RES,
-                                    trainable=True, 
-                                    num_trainable=-2, 
-                                    mc=False)
+            with tf.device("/device:GPU:0"):
+                model = create_model('efficient', 
+                                        res=N_RES, 
+                                        # num_classes=num_classes, 
+                                        trainable=False, 
+                                        num_trainable=0, 
+                                        mc=False)
 
-        # train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False).batch(N_BATCH).prefetch(AUTOTUNE)
-        # valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]).batch(N_BATCH).prefetch(AUTOTUNE)
-            train_dataset = create_dataset(train_images, train_labels, aug=False)
-            # valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]).batch(N_BATCH).prefetch(AUTOTUNE)
+                train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False)
+                valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx])
                 
-                        
-            split_len = int(len(train_images) * 0.3)
-            valid_dataset = train_dataset.take(split_len).batch(N_BATCH)
-            # valid_dataset = create_dat`aset(train_images, train_labels) 
-            train_dataset = train_dataset.skip(split_len).batch(N_BATCH)
+                # STEPS_PER_EPOCH = 10
+                # SCHEDULE_LENGTH = (
+                #     500  # we will train on lower resolution images and will still attain good results
+                # )
+                SCHEDULE_BOUNDARIES = [
+                    200,
+                    300,
+                    400,
+                ]  
 
-                    # train_dataset = train_dataset.batch(N_BATCH).map(lambda x, y : (get_bottleneck_feature(bottleneck_model, x), y))
-                    # valid_dataset = valid_dataset.batch(N_BATCH).map(lambda x, y : (get_bottleneck_feature(bottleneck_model, x), y))
-                    # train_dataset = train_dataset.batch(N_BATCH).map(bottleneck_model)
-                    # valid_dataset = valid_dataset.batch(N_BATCH).map(bottleneck_model)
-            
                 
-                    # dir_name = os.path.join('C:/Users/user/Desktop/models/child_skin_classification/', time.strftime("%Y%m%d"))
-                    
-                    # if not os.path.exists(dir_name):
-                    #     os.makedirs(dir_name)
+                # DATASET_NUM_TRAIN_EXAMPLES = train_dataset.cardinality().numpy()
+                # repeat_count = int(
+                #     SCHEDULE_LENGTH * N_BATCH / DATASET_NUM_TRAIN_EXAMPLES * STEPS_PER_EPOCH
+                # )
+                
+                # repeat_count += 50 + 1  # To ensure at least there are 50 epochs of training
+                
+                # print(repeat_count)
 
-            hist = model.fit(train_dataset,
-                    validation_data=valid_dataset,
-                    # class_weight=class_weights, 
-                    # validation_split=0.3, 
-                    epochs=50,
-                    verbose=1,
-                    shuffle=True)
+
+                
+                train_dataset = train_dataset.batch(N_BATCH).prefetch(AUTOTUNE)
+                valid_dataset = valid_dataset.batch(N_BATCH).prefetch(AUTOTUNE)
+                
+                bit_model_url = "https://tfhub.dev/google/bit/m-r50x1/1"
+                bit_module = hub.KerasLayer(bit_model_url)
+                
+                
+                model = MyBiTModel(num_classes=num_classes, module=bit_module)
+                
+                
+                learning_rate = 0.003 * N_BATCH / 512
+
+                # Decay learning rate by a factor of 10 at SCHEDULE_BOUNDARIES.
+                lr_schedule = keras.optimizers.schedules.PiecewiseConstantDecay(
+                    boundaries=SCHEDULE_BOUNDARIES,
+                    values=[
+                        learning_rate,
+                        learning_rate * 0.1,
+                        learning_rate * 0.01,
+                        learning_rate * 0.001,
+                    ],
+                )
+                optimizer = keras.optimizers.SGD(learning_rate=lr_schedule, momentum=0.9)
+
+                loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+                
+                model.compile(optimizer=optimizer, loss=loss_fn, metrics=["accuracy"])
+
+
+                train_callbacks = [
+                    keras.callbacks.EarlyStopping(
+                        monitor="val_accuracy", patience=2, restore_best_weights=True
+                    )
+                ]
+                history = model.fit(train_dataset,
+                                    batch_size=N_BATCH,
+                                    # epochs=int(SCHEDULE_LENGTH / STEPS_PER_EPOCH),
+                                    epochs=50, 
+                                    # steps_per_epoch=STEPS_PER_EPOCH,
+                                    validation_data=valid_dataset,
+                                    callbacks=train_callbacks,
+                                )
+                
         
+                
+                # split_len = int(len(train_images) * 0.3)
+                # valid_dataset = train_dataset.take(split_len)
+                # # valid_dataset = create_dat`aset(train_images, train_labels) 
+                # train_dataset = train_dataset.skip(split_len)
 
-        model.save(f'C:/Users/user/Desktop/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_normal_and_{key_all_dict}.h5')
+                # train_dataset = train_dataset.batch(N_BATCH).map(lambda x, y : (get_bottleneck_feature(bottleneck_model, x), y))
+                # valid_dataset = valid_dataset.batch(N_BATCH).map(lambda x, y : (get_bottleneck_feature(bottleneck_model, x), y))
+                # train_dataset = train_dataset.batch(N_BATCH).map(bottleneck_model)
+                # valid_dataset = valid_dataset.batch(N_BATCH).map(bottleneck_model)
+        
+            
+                # dir_name = os.path.join('C:/Users/user/Desktop/models/child_skin_classification/', time.strftime("%Y%m%d"))
+                
+                # if not os.path.exists(dir_name):
+                #     os.makedirs(dir_name)
+
+                # hist = model.fit(train_dataset,
+                #         validation_data=valid_dataset,
+                #         # class_weight=class_weights, 
+                #         # validation_split=0.3, 
+                #         epochs=50,
+                #         verbose=1,
+                #         shuffle=True)
+    
+
+    # model.save(f'C:/Users/user/Desktop/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_100_and)500_kfold_{skf_num}_{kfold}.h5')
 
     # # import pandas as pd
     # hist_df = pd.DataFrame(hist.history)
