@@ -75,24 +75,24 @@ def create_all_dict(min_num, max_num):
     count_all_dict = dict() 
 
     for i in range(10):
-        files = os.listdir(os.path.join(main.dataset_path, f'H{i}'))
+        folders = os.listdir(os.path.join(main.dataset_path, f'H{i}'))
         
-        for f in files:
-            imgs = glob(f'{main.dataset_path}/H{i}/{f}/*.jpg')
+        for folder in folders:
+            imgs = glob(f'{main.dataset_path}/H{i}/{folder}/*.jpg')
             
-            f = f.lower().replace(' ', '')
+            folder = folder.lower().replace(' ', '')
 
             # class 통합 관련 내용 변경
-            if f in main.name_dict: 
-                f = main.name_dict[f]
+            if folder in main.name_dict: 
+                folder = main.name_dict[folder]
                 
-            if not f in main.class_list:
-                print(f'WARNING!! NOT FOUND LABEL : {f}')
+            if folder not in main.class_list:
+                print(f'WARNING!! NOT FOUND LABEL : {folder}')
             
-            if f not in count_all_dict:
-                count_all_dict[f] = len(imgs) 
+            if folder not in count_all_dict:
+                count_all_dict[folder] = len(imgs) 
             else:
-                count_all_dict[f] += len(imgs)
+                count_all_dict[folder] += len(imgs)
 
     new_count_dict = count_all_dict.copy()
 
@@ -123,9 +123,9 @@ def create_train_list(all_dict, count_all_dict):
         folders = os.listdir(os.path.join(main.dataset_path, f'H{i}'))
         
         for folder in folders:
-            folder = folder.lower().replace(' ', '')
-            
-            if folder in all_dict:
+            # folder = folder.lower().replace(' ', '')
+            reg_folder = folder.lower().replace(' ', '') 
+            if (reg_folder in all_dict) or (reg_folder in main.name_dict):
                 img = glob(main.dataset_path + f'/H{str(i)}/{folder}/*.jpg')
                 images.extend(img)
                 
@@ -137,16 +137,25 @@ def create_train_list(all_dict, count_all_dict):
         # for key, val in main.name_dict.items():
         #     img = glob(main.dataset_path + f'/H{str(i)}/{key}/*.jpg')
         #     images.extend(img)
-
         
     # 전남대 추가
-    for key, val in all_dict.items(): 
-        img = glob(main.dataset_path + '/H9/{key}/*.jpg')
-        images.extend(img) 
+    folders = os.listdir(os.path.join(main.dataset_path, 'H9'))
+        
+    for folder in folders:
+        reg_folder = folder.lower().replace(' ', '') 
+        if (reg_folder in all_dict) or (reg_folder in main.name_dict):
+            img = glob(main.dataset_path + f'/H9/{folder}/*.jpg')
+            images.extend(img)
 
-    for key, val in main.name_dict.items():
-        img = glob(main.dataset_path + f'/H9/{key}/*.jpg')
-        images.extend(img)
+        
+        # 전남대 추가
+        # for key, val in all_dict.items(): 
+        #     img = glob(main.dataset_path + '/H9/{key}/*.jpg')
+        #     images.extend(img) 
+
+        # for key, val in main.name_dict.items():
+        #     img = glob(main.dataset_path + f'/H9/{key}/*.jpg')
+        #     images.extend(img)
 
     # 고른 데이터 분배를 위한 random shuffle
     random.shuffle(images)

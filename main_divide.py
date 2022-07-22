@@ -278,7 +278,7 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         
         # add 20220714
         x = keras.layers.BatchNormalization()(x)
-        
+
         x = get_dropout(x, mc)
         
         # add 20220714
