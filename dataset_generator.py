@@ -20,23 +20,23 @@ def train_generator(images, labels, aug=False):
         img = img[0].decode('utf-8')
         img = cv2.imread(img)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = cv2.resize(img, (main.num_batch, main.num_batch))
+        img = cv2.resize(img, (main.num_res, main.num_res))
         # img = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)
 
         yield (img, lbl)    
         
         # if lower than base num, should apply data augmentation
         # if base_num <= int(train_dict[idx]):
-        if aug:
-            # Btight 
-            random_bright_tensor = tf.image.random_brightness(img, max_delta=128)
-            random_bright_tensor = tf.clip_by_value(random_bright_tensor, 0, 255)
-            random_bright_image = tf.keras.preprocessing.image.array_to_img(random_bright_tensor)
-            yield (random_bright_tensor, lbl) 
+        # if aug:
+        #     # Btight 
+        #     random_bright_tensor = tf.image.random_brightness(img, max_delta=128)
+        #     random_bright_tensor = tf.clip_by_value(random_bright_tensor, 0, 255)
+        #     random_bright_image = tf.keras.preprocessing.image.array_to_img(random_bright_tensor)
+        #     yield (random_bright_tensor, lbl) 
     
-            # rotation
-            rotated_img = tf.image.rot90(img)        
-            yield (rotated_img, lbl) 
+        #     # rotation
+        #     rotated_img = tf.image.rot90(img)        
+        #     yield (rotated_img, lbl) 
             
             # # curmix 
             # cutmixed_img, cutmixed_lbl = cutmix(img, lbl)
