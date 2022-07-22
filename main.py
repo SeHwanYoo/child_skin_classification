@@ -42,7 +42,7 @@ if gpus:
 
 
 num_res = 300
-num_batch = 127
+num_batch = 128
 # PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
 base_path = '../../datasets/Child Skin Disease'
 dataset_path = os.path.join(base_path, 'Total_Dataset')
@@ -315,13 +315,13 @@ if __name__ == '__main__':
             # if not os.path.exists(dir_name):
             #     os.makedirs(dir_name)
 
-            # sv = [tf.keras.callbacks.ModelCheckpoint(os.path.join(f'../../models/child_skin_classification/{dir_name}/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'), 
-            #                                     monitor='val_accuracy', 
-            #                                     verbose=0, 
-            #                                     save_best_only=True,
-            #                                     save_weights_only=False, 
-            #                                     mode='max', 
-            #                                     save_freq='epoch'), 
+            sv = [tf.keras.callbacks.ModelCheckpoint(
+                os.path.join(f'../../models/child_skin_classification/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'),monitor='val_accuracy', 
+                verbose=0, 
+                save_best_only=True,
+                save_weights_only=False, 
+                mode='max', 
+                save_freq='epoch')]
             # tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
             #                                 patience = 4, 
             #                                 min_delta = 0.01)]
