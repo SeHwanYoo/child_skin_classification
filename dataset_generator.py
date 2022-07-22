@@ -86,7 +86,7 @@ def create_all_dict(dataset, min_num, max_num):
             if f in main.name_dict: 
                 f = main.name_dict[f]
                 
-            if not f in main.lass_list:
+            if not f in main.class_list:
                 print(f'WARNING!! NOT FOUND LABEL : {f}')
             
             if f not in count_all_dict:
