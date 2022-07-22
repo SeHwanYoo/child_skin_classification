@@ -304,35 +304,31 @@ if __name__ == '__main__':
                                             mc=False)
 
 
-            train_dataset = dataset_generator.create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
-            valid_dataset = dataset_generator.create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
-        
-            train_dataset = train_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
-            valid_dataset = valid_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
+                train_dataset = dataset_generator.create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
+                valid_dataset = dataset_generator.create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
             
-            # dir_name = os.path.join('../../models/child_skin_classification/', time.strftime("%Y%m%d"))
-            
-            # if not os.path.exists(dir_name):
-            #     os.makedirs(dir_name)
+                train_dataset = train_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
+                valid_dataset = valid_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
+                
 
-            sv = [tf.keras.callbacks.ModelCheckpoint(
-                os.path.join(f'../../models/child_skin_classification/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'),monitor='val_accuracy', 
-                verbose=0, 
-                save_best_only=True,
-                save_weights_only=False, 
-                mode='max', 
-                save_freq='epoch')]
-            # tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
-            #                                 patience = 4, 
-            #                                 min_delta = 0.01)]
-            
-            # tensorboard = TensorBoard(log_dir=f'../../logs/child_skin_classification/{time.strftime("%Y%m%d")}_{kfold}')
+                sv = [tf.keras.callbacks.ModelCheckpoint(
+                    os.path.join(f'../../models/child_skin_classification/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'),monitor='val_accuracy', 
+                    verbose=0, 
+                    save_best_only=True,
+                    save_weights_only=False, 
+                    mode='max', 
+                    save_freq='epoch')]
+                # tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
+                #                                 patience = 4, 
+                #                                 min_delta = 0.01)]
+                
+                # tensorboard = TensorBoard(log_dir=f'../../logs/child_skin_classification/{time.strftime("%Y%m%d")}_{kfold}')
 
-            hist = model.fit(train_dataset,
-                    validation_data=valid_dataset,
-                    epochs=10000,
-                    # verbose=2,
-                    shuffle=True)
+                hist = model.fit(train_dataset,
+                        validation_data=valid_dataset,
+                        epochs=10000,
+                        # verbose=2,
+                        shuffle=True)
             
 
             model.save(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
