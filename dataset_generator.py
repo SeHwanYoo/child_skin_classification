@@ -78,14 +78,16 @@ def create_all_dict(dataset, min_num, max_num):
         files = os.listdir(os.path.join(main.dataset_path, f'H{i}'))
         
         for f in files:
-            # imgs = glob(os.path.join(dataset, f'H{i}', f) + '/*.jpg')
-            imgs = glob(f'{main.dataset_path}/H{i}/{f}/*.jpg')
+            f = f.lower().replace(' ', '')
             
-            # print(f)
+            imgs = glob(f'{main.dataset_path}/H{i}/{f}/*.jpg')
 
             # class 통합 관련 내용 변경
             if f in main.name_dict: 
                 f = main.name_dict[f]
+                
+            if not f in main.lass_list:
+                print(f'WARNING!! NOT FOUND LABEL : {f}')
             
             if f not in count_all_dict:
                 count_all_dict[f] = len(imgs) 
@@ -94,7 +96,6 @@ def create_all_dict(dataset, min_num, max_num):
 
     new_count_dict = count_all_dict.copy()
 
-    # print(new_count_dict)
 
     # 데이터 정제
     for key, val in count_all_dict.items():
@@ -140,35 +141,39 @@ def create_train_list(all_dict, count_all_dict):
     # 고른 데이터 분배를 위한 random shuffle
     random.shuffle(images)
 
-    # max 데이터 처리
-    # count 를 돌면서 count
-    # count_all_dict = all_dict.copy() 
-
     train_images = []
     for idx_imgs, val_imgs in enumerate(images):
 
         # class 통합 관련 내용 변경
-        classes = val_imgs.split('/')[-2]
+        classes = val_imgs.split('/')[-2].lower().replace(' ', '')
+        
         if classes in main.name_dict:
-            if count_all_dict[main.name_dict[classes]] > 0:
-                count_all_dict[main.name_dict[classes]] -= 1
-                train_images.append(val_imgs)
+            classes = main.name_dict[classes]
+        
+        if count_all_dict[classes] > 0:
+            count_all_dict[classes] -= 1
+            train_images.append(val_imgs)
+        
+        # if classes in main.name_dict:    
+        #     if count_all_dict[main.name_dict[classes]] > 0:
+        #         count_all_dict[main.name_dict[classes]] -= 1
+        #         train_images.append(val_imgs)
 
-            else:
-                continue
+        #     else:
+        #         continue
 
-        else:
-            if count_all_dict[classes] > 0:
-                count_all_dict[classes] -= 1
-                train_images.append(val_imgs)
-            else:
-                continue
+        # else:
+        #     if count_all_dict[classes] > 0:
+        #         count_all_dict[classes] -= 1
+        #         train_images.append(val_imgs)
+        #     else:
+        #         continue
 
 
     train_labels = [] 
     for img in train_images:
         # lbl = img.split('/')[-1].split('\\')[0]
-        lbl = img.split('/')[-2]
+        lbl = img.split('/')[-2].lower().replace(' ', '')
 
         # 변경/통합 버전으로 label 처리
         if lbl in main.name_dict:
