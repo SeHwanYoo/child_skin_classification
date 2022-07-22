@@ -312,7 +312,8 @@ if __name__ == '__main__':
                 
 
                 sv = [tf.keras.callbacks.ModelCheckpoint(
-                    os.path.join(f'../../models/child_skin_classification/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'),monitor='val_accuracy', 
+                    os.path.join(f'../../models/child_skin_classification/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'),
+                    monitor='val_accuracy', 
                     verbose=0, 
                     save_best_only=True,
                     save_weights_only=False, 
