@@ -304,8 +304,8 @@ if __name__ == '__main__':
                                             mc=False)
 
 
-            train_dataset = models.create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
-            valid_dataset = models.create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
+            train_dataset = dataset_generator.create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
+            valid_dataset = dataset_generator.create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
         
             train_dataset = train_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
             valid_dataset = valid_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
