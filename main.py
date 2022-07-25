@@ -327,9 +327,10 @@ if __name__ == '__main__':
 
                 hist = model.fit(train_dataset,
                         validation_data=valid_dataset,
-                        epochs=10000,
+                        epochs=500,
                         # verbose=2,
-                        shuffle=True)
+                        shuffle=True,
+                        callbacks=[sv])
             
 
             model.save(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
