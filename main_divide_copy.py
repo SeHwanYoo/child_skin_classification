@@ -44,7 +44,8 @@ N_RES = 300
 N_CROP_RES = 256
 # N_RES = 300
 N_BATCH = 8
-PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
+# PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
+PATH = 'D:/Dropbox/WORK/SNUH/Child Skin Disease'
 # PATH = '../../datasets/Child Skin Disease'
 dataset_path = os.path.join(PATH, 'Total_Dataset')
 
@@ -692,17 +693,29 @@ if __name__ == '__main__':
         
         
         print('-------------------------------------')
-        print(new_all_dict)
-        print(new_count_all_dict)
+        print('Create Train Datasets')
         print('-------------------------------------')
 
-        train_images, train_labels = create_train_list(dataset_path, new_all_dict, new_count_all_dict)
+        # train_images, train_labels = create_train_list(dataset_path, new_all_dict, new_count_all_dict)
         
+        # X = np.reshape(train_images, [-1, N_RES * N_RES * 3])
+        # y = train_labels
+        
+        (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
+        
+        print(train_images.shape)
+        
+        X = np.reshape(train_images, [-1, 28 * 28 * 3])
+        y = train_labels
         
         print('-------------------------------------')
-        print(train_images)
-        print(train_labels)
+        print('Begin Classifier')
         print('-------------------------------------')
+        
+        from sklearn.multiclass import OneVsRestClassifier
+        from sklearn.svm import SVC
+        
+        clf = OneVsRestClassifier(SVC()).fit(X, y)
         
         # bottleneck_model = get_bottleneck_model('efficient')
 
@@ -714,24 +727,24 @@ if __name__ == '__main__':
         #     for train_idx, valid_idx in skf.split(train_images, train_labels):
                 
         #         with tf.device("/device:GPU:0"):
-        strategy = tf.distribute.MirroredStrategy()
-        with strategy.scope():
-            model = create_model('efficient', 
-                                    res=N_RES,
-                                    trainable=True, 
-                                    num_trainable=-2, 
-                                    mc=False)
+        # strategy = tf.distribute.MirroredStrategy()
+        # with strategy.scope():
+        #     model = create_model('efficient', 
+        #                             res=N_RES,
+        #                             trainable=True, 
+        #                             num_trainable=-2, 
+        #                             mc=False)
 
         # train_dataset = create_dataset(train_images[train_idx], train_labels[train_idx], aug=False).batch(N_BATCH).prefetch(AUTOTUNE)
         # valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]).batch(N_BATCH).prefetch(AUTOTUNE)
-            train_dataset = create_dataset(train_images, train_labels, aug=False)
+            # train_dataset = create_dataset(train_images, train_labels, aug=False)
             # valid_dataset = create_dataset(train_images[valid_idx], train_labels[valid_idx]).batch(N_BATCH).prefetch(AUTOTUNE)
                 
                         
-            split_len = int(len(train_images) * 0.3)
-            valid_dataset = train_dataset.take(split_len).batch(N_BATCH)
-            # valid_dataset = create_dat`aset(train_images, train_labels) 
-            train_dataset = train_dataset.skip(split_len).batch(N_BATCH)
+            # split_len = int(len(train_images) * 0.3)
+            # valid_dataset = train_dataset.take(split_len).batch(N_BATCH)
+            # # valid_dataset = create_dat`aset(train_images, train_labels) 
+            # train_dataset = train_dataset.skip(split_len).batch(N_BATCH)
 
                     # train_dataset = train_dataset.batch(N_BATCH).map(lambda x, y : (get_bottleneck_feature(bottleneck_model, x), y))
                     # valid_dataset = valid_dataset.batch(N_BATCH).map(lambda x, y : (get_bottleneck_feature(bottleneck_model, x), y))
@@ -744,16 +757,16 @@ if __name__ == '__main__':
                     # if not os.path.exists(dir_name):
                     #     os.makedirs(dir_name)
 
-            hist = model.fit(train_dataset,
-                    validation_data=valid_dataset,
-                    # class_weight=class_weights, 
-                    # validation_split=0.3, 
-                    epochs=50,
-                    verbose=1,
-                    shuffle=True)
+        #     hist = model.fit(train_dataset,
+        #             validation_data=valid_dataset,
+        #             # class_weight=class_weights, 
+        #             # validation_split=0.3, 
+        #             epochs=50,
+        #             verbose=1,
+        #             shuffle=True)
         
 
-        model.save(f'C:/Users/user/Desktop/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_normal_and_{key_all_dict}.h5')
+        # model.save(f'C:/Users/user/Desktop/models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_normal_and_{key_all_dict}.h5')
 
     # # import pandas as pd
     # hist_df = pd.DataFrame(hist.history)
