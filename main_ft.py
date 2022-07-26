@@ -280,12 +280,12 @@ AUTOTUNE = tf.data.AUTOTUNE
     
 if __name__ == '__main__':
     
-    all_dict, count_all_dict = dataset_generator.create_all_dict(dataset_path, min_num, max_num)
+    all_dict, count_all_dict = dataset_generator.create_all_dict(min_num, max_num)
     num_classes = len(all_dict)
     
     print(f'number of classes : {num_classes}')
 
-    train_images, train_labels = dataset_generator.create_train_list(dataset_path, all_dict, count_all_dict)
+    train_images, train_labels = dataset_generator.create_train_list(all_dict, count_all_dict)
 
     # for skf_num in range(3, 11):
     for skf_num in [5, 10]:
@@ -294,13 +294,14 @@ if __name__ == '__main__':
         kfold = 0 
         for train_idx, valid_idx in skf.split(train_images, train_labels):
             
-            strategy = tf.distribute.MirroredStrategy()
-            with strategy.scope():
+            # strategy = tf.distribute.MirroredStrategy()
+            mirrored_strategy = tf.distribute.MirroredStrategy(devices=["/gpu:0", "/gpu:1", "/gpu:2"])
+            with mirrored_strategy.scope():
                 model = models.create_model('efficient', 
                                             res=num_res, 
                                             num_classes=num_classes, 
                                             trainable=True, 
-                                            num_trainable=-2, 
+                                            num_trainable=0, 
                                             mc=False)
 
 

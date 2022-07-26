@@ -21,8 +21,9 @@ def create_model(model_name, res=256, trainable=False, num_trainable=100, num_cl
         base_model.trainable = trainable
         
         if trainable:
-            for layer in base_model.layers[:num_trainable]:
-                layer.trainable = False
+            if num_trainable != 0:
+                for layer in base_model.layers[:num_trainable]:
+                    layer.trainable = False
         
         inputs = keras.Input(shape=(res, res, 3))
         x = base_model(inputs)

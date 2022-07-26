@@ -70,15 +70,15 @@ def create_dataset(images, labels, d_type='train', aug=False):
                                               output_shapes=(tf.TensorShape([main.num_res, main.num_res, 3]), tf.TensorShape([1])),
                                               args=[images, labels, aug])
         
-def create_all_dict(min_num, max_num):
+def create_all_dict(dataset_path, min_num, max_num):
     all_dict = dict() 
     count_all_dict = dict() 
 
     for i in range(10):
-        folders = os.listdir(os.path.join(main.dataset_path, f'H{i}'))
+        folders = os.listdir(os.path.join(dataset_path, f'H{i}'))
         
         for folder in folders:
-            imgs = glob(f'{main.dataset_path}/H{i}/{folder}/*.jpg')
+            imgs = glob(f'{dataset_path}/H{i}/{folder}/*.jpg')
             
             folder = folder.lower().replace(' ', '')
 
@@ -116,45 +116,45 @@ def create_all_dict(min_num, max_num):
     return all_dict, new_count_dict
 
         
-def create_train_list(all_dict, count_all_dict):
+def create_train_list(dataset_path, all_dict, count_all_dict):
     images = []
     for i in range(6):
         
-        folders = os.listdir(os.path.join(main.dataset_path, f'H{i}'))
+        folders = os.listdir(os.path.join(dataset_path, f'H{i}'))
         
         for folder in folders:
             # folder = folder.lower().replace(' ', '')
             reg_folder = folder.lower().replace(' ', '') 
             if (reg_folder in all_dict) or (reg_folder in main.name_dict):
-                img = glob(main.dataset_path + f'/H{str(i)}/{folder}/*.jpg')
+                img = glob(dataset_path + f'/H{str(i)}/{folder}/*.jpg')
                 images.extend(img)
                 
 
         # for key, val in all_dict.items():
-        #     img = glob(main.dataset_path + f'/H{str(i)}/{key}/*.jpg')
+        #     img = glob(dataset_path + f'/H{str(i)}/{key}/*.jpg')
         #     images.extend(img)
 
         # for key, val in main.name_dict.items():
-        #     img = glob(main.dataset_path + f'/H{str(i)}/{key}/*.jpg')
+        #     img = glob(dataset_path + f'/H{str(i)}/{key}/*.jpg')
         #     images.extend(img)
         
     # 전남대 추가
-    folders = os.listdir(os.path.join(main.dataset_path, 'H9'))
+    folders = os.listdir(os.path.join(dataset_path, 'H9'))
         
     for folder in folders:
         reg_folder = folder.lower().replace(' ', '') 
         if (reg_folder in all_dict) or (reg_folder in main.name_dict):
-            img = glob(main.dataset_path + f'/H9/{folder}/*.jpg')
+            img = glob(dataset_path + f'/H9/{folder}/*.jpg')
             images.extend(img)
 
         
         # 전남대 추가
         # for key, val in all_dict.items(): 
-        #     img = glob(main.dataset_path + '/H9/{key}/*.jpg')
+        #     img = glob(dataset_path + '/H9/{key}/*.jpg')
         #     images.extend(img) 
 
         # for key, val in main.name_dict.items():
-        #     img = glob(main.dataset_path + f'/H9/{key}/*.jpg')
+        #     img = glob(dataset_path + f'/H9/{key}/*.jpg')
         #     images.extend(img)
 
     # 고른 데이터 분배를 위한 random shuffle
