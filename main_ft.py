@@ -295,7 +295,7 @@ if __name__ == '__main__':
         for train_idx, valid_idx in skf.split(train_images, train_labels):
             
             # strategy = tf.distribute.MirroredStrategy()
-            mirrored_strategy = tf.distribute.MirroredStrategy(devices=["/gpu:0", "/gpu:1", "/gpu:2"])
+            mirrored_strategy = tf.distribute.MirroredStrategy(devices=["/device:GPU:0", "/device:GPU:1", "/device:GPU:2"])
             with mirrored_strategy.scope():
                 model = models.create_model('efficient', 
                                             res=num_res, 
