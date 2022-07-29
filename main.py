@@ -294,6 +294,30 @@ if __name__ == '__main__':
         kfold = 0 
         for train_idx, valid_idx in skf.split(train_images, train_labels):
             
+            train_dataset = dataset_generator.create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
+            valid_dataset = dataset_generator.create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
+            
+            train_dataset = train_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
+            valid_dataset = valid_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
+            
+            acc_filename = os.path.join(f'../../models/child_skin_classification/accuracy_checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
+            loss_filename = os.path.join(f'../../models/child_skin_classification/loss_checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
+
+            sv = [tf.keras.callbacks.ModelCheckpoint(acc_filename,
+                                                        monitor='val_accuracy', 
+                                                        verbose=0, 
+                                                        save_best_only=True,
+                                                        save_weights_only=False, 
+                                                        mode='max', 
+                                                        save_freq='epoch'), 
+                    tf.keras.callbacks.ModelCheckpoint(loss_filename,
+                                                        monitor='val_loss', 
+                                                        verbose=0, 
+                                                        save_best_only=True,
+                                                        save_weights_only=False, 
+                                                        mode='min', 
+                                                        save_freq='epoch')]
+            
             strategy = tf.distribute.MirroredStrategy()
             print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
             
@@ -305,40 +329,9 @@ if __name__ == '__main__':
                                             num_trainable=-2, 
                                             mc=False)
 
-
-                train_dataset = dataset_generator.create_dataset(train_images[train_idx], train_labels[train_idx], aug=False) 
-                valid_dataset = dataset_generator.create_dataset(train_images[valid_idx], train_labels[valid_idx]) 
-            
-                train_dataset = train_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
-                valid_dataset = valid_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
-                
-                acc_filename = os.path.join(f'../../models/child_skin_classification/accuracy_checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
-                loss_filename = os.path.join(f'../../models/child_skin_classification/loss_checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
-
-                sv = [tf.keras.callbacks.ModelCheckpoint(acc_filename,
-                                                         monitor='val_accuracy', 
-                                                         verbose=0, 
-                                                         save_best_only=True,
-                                                         save_weights_only=False, 
-                                                         mode='max', 
-                                                         save_freq='epoch'), 
-                      tf.keras.callbacks.ModelCheckpoint(loss_filename,
-                                                         monitor='val_loss', 
-                                                         verbose=0, 
-                                                         save_best_only=True,
-                                                         save_weights_only=False, 
-                                                         mode='min', 
-                                                         save_freq='epoch')]
-                # tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
-                #                                 patience = 4, 
-                #                                 min_delta = 0.01)]
-                
-                # tensorboard = TensorBoard(log_dir=f'../../logs/child_skin_classification/{time.strftime("%Y%m%d")}_{kfold}')
-
             hist = model.fit(train_dataset,
                     validation_data=valid_dataset,
                     epochs=500,
-                    # verbose=2,\
                     shuffle=True,
                     callbacks=[sv])
             
