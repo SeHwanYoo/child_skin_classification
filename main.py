@@ -286,6 +286,9 @@ if __name__ == '__main__':
     print(f'number of classes : {num_classes}')
 
     train_images, train_labels = dataset_generator.create_train_list(dataset_path, all_dict, count_all_dict)
+    
+    print(f'train_images : {train_images}')
+    print(f'train_labels : {train_labels}')
 
     # for skf_num in range(3, 11):
     for skf_num in [5, 10]:
@@ -310,15 +313,23 @@ if __name__ == '__main__':
                 train_dataset = train_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
                 valid_dataset = valid_dataset.batch(num_batch, drop_remainder=True).shuffle(1000).prefetch(AUTOTUNE)
                 
+                acc_filename = os.path.join(f'../../models/child_skin_classification/accuracy_checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
+                loss_filename = os.path.join(f'../../models/child_skin_classification/loss_checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')
 
-                sv = [tf.keras.callbacks.ModelCheckpoint(
-                    os.path.join(f'../../models/child_skin_classification/checkpoint_{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5'),
-                    monitor='val_accuracy', 
-                    verbose=0, 
-                    save_best_only=True,
-                    save_weights_only=False, 
-                    mode='max', 
-                    save_freq='epoch')]
+                sv = [tf.keras.callbacks.ModelCheckpoint(acc_filename,
+                                                         monitor='val_accuracy', 
+                                                         verbose=0, 
+                                                         save_best_only=True,
+                                                         save_weights_only=False, 
+                                                         mode='max', 
+                                                         save_freq='epoch'), 
+                      tf.keras.callbacks.ModelCheckpoint(loss_filename,
+                                                         monitor='val_loss', 
+                                                         verbose=0, 
+                                                         save_best_only=True,
+                                                         save_weights_only=False, 
+                                                         mode='min', 
+                                                         save_freq='epoch')]
                 # tf.keras.callbacks.EarlyStopping(monitor = 'val_accuracy', 
                 #                                 patience = 4, 
                 #                                 min_delta = 0.01)]
