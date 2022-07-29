@@ -286,9 +286,6 @@ if __name__ == '__main__':
     print(f'number of classes : {num_classes}')
 
     train_images, train_labels = dataset_generator.create_train_list(dataset_path, all_dict, count_all_dict)
-    
-    print(f'train_images : {train_images}')
-    print(f'train_labels : {train_labels}')
 
     # for skf_num in range(3, 11):
     for skf_num in [5, 10]:
@@ -298,6 +295,8 @@ if __name__ == '__main__':
         for train_idx, valid_idx in skf.split(train_images, train_labels):
             
             strategy = tf.distribute.MirroredStrategy()
+            print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
+            
             with strategy.scope():
                 model = models.create_model('efficient', 
                                             res=num_res, 
@@ -336,12 +335,12 @@ if __name__ == '__main__':
                 
                 # tensorboard = TensorBoard(log_dir=f'../../logs/child_skin_classification/{time.strftime("%Y%m%d")}_{kfold}')
 
-                hist = model.fit(train_dataset,
-                        validation_data=valid_dataset,
-                        epochs=500,
-                        # verbose=2,\
-                        shuffle=True,
-                        callbacks=[sv])
+            hist = model.fit(train_dataset,
+                    validation_data=valid_dataset,
+                    epochs=500,
+                    # verbose=2,\
+                    shuffle=True,
+                    callbacks=[sv])
             
 
             model.save(f'../../models/child_skin_classification/{time.strftime("%Y%m%d-%H%M%S")}_efficientb4_kfold_{skf_num}_{kfold}.h5')

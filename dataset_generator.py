@@ -182,6 +182,8 @@ def create_train_list(dataset_path, all_dict, count_all_dict):
         if lbl in main.name_dict:
             lbl = main.name_dict[lbl]
 
+        print(f'img : {img}, lbl : {lbl}')
+
         lbl = label_2_index(lbl, all_dict)
         train_labels.append(lbl)
         
