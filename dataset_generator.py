@@ -117,6 +117,9 @@ def create_all_dict(dataset_path, min_num, max_num):
 
         
 def create_train_list(dataset_path, all_dict, count_all_dict):
+    
+    # print(all_dict)
+    
     images = []
     for i in range(6):
         
@@ -164,7 +167,8 @@ def create_train_list(dataset_path, all_dict, count_all_dict):
     for idx_imgs, val_imgs in enumerate(images):
 
         # class 통합 관련 내용 변경
-        classes = val_imgs.split('/')[-2].lower().replace(' ', '')
+        # classes = val_imgs.split('/')[-2].lower().replace(' ', '')
+        classes = val_imgs.split('/')[-1].split('\\')[0].lower().replace(' ', '')
         
         if classes in main.name_dict:
             classes = main.name_dict[classes]
@@ -175,8 +179,8 @@ def create_train_list(dataset_path, all_dict, count_all_dict):
         
     train_labels = [] 
     for img in train_images:
-        # lbl = img.split('/')[-1].split('\\')[0]
-        lbl = img.split('/')[-2].lower().replace(' ', '')
+        lbl = img.split('/')[-1].split('\\')[0].lower().replace(' ', '')
+        # lbl = img.split('/')[-2].lower().replace(' ', '')
 
         # 변경/통합 버전으로 label 처리
         if lbl in main.name_dict:

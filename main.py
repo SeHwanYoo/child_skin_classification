@@ -45,8 +45,8 @@ tf.debugging.set_log_device_placement(True)
 
 num_res = 300
 num_batch = 128
-# PATH = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
-base_path = '../../datasets/Child Skin Disease'
+base_path = 'C:/Users/user/Desktop/datasets/Child Skin Disease'
+# base_path = '../../datasets/Child Skin Disease'
 dataset_path = os.path.join(base_path, 'Total_Dataset')
 
 # Train & test set
